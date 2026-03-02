@@ -1,0 +1,339 @@
+---
+title: Entities Management
+description: Manage organizational entities, hierarchies, and entity-specific settings
+---
+
+## Overview
+
+Entities in ITSM-NG represent organizational units, departments, subsidiaries, or any hierarchical structure. Each entity can have its own configuration, users, and assets.
+
+## Understanding Entities
+
+### Entity Hierarchy
+
+Entities are organized in a tree structure:
+- **Root Entity**: Top-level entity (ID 0)
+- **Child Entities**: Sub-organizations under a parent entity
+- **Recursive Rights**: Permissions can be inherited from parent entities
+
+<Note>
+The root entity cannot be deleted and always has `entities_id = -1`.
+</Note>
+
+## Creating Entities
+
+<Steps>
+  <Step title="Navigate to entities">
+    Go to **Administration > Entities** in the main menu.
+  </Step>
+  
+  <Step title="Create new entity">
+    Click **Add** and fill in the entity details:
+    - **Name**: Entity name (required)
+    - **Parent entity**: Select the parent (if applicable)
+    - **Comments**: Optional description
+  </Step>
+  
+  <Step title="Configure entity settings">
+    Set entity-specific options across multiple tabs:
+    - Address
+    - Advanced information
+    - Notifications
+    - Assistance
+    - Assets
+  </Step>
+  
+  <Step title="Save the entity">
+    Click **Add** to create the entity.
+  </Step>
+</Steps>
+
+## Entity Configuration Tabs
+
+### Address Tab
+
+Configure contact information:
+
+```yaml
+Phone: Contact phone number
+Fax: Fax number
+Website: Organization website
+Email: Contact email
+Postal code: Zip/postal code
+City: City name
+State: State or province
+Country: Country name
+Coordinates: Latitude, Longitude, Altitude
+```
+
+**Geolocation**: The coordinates are used for mapping and location-based features.
+
+### Advanced Information
+
+Configure LDAP and inventory integration:
+
+<Steps>
+  <Step title="LDAP Directory">
+    Link the entity to an LDAP directory:
+    - **LDAP directory**: Select the LDAP server
+    - **LDAP DN attribute**: Attribute representing the entity
+    - **Search filter**: Additional LDAP filter (optional)
+  </Step>
+  
+  <Step title="Inventory tag">
+    Set the **TAG** value used by inventory tools (e.g., GLPI Agent, OCS Inventory) to identify this entity.
+  </Step>
+  
+  <Step title="Mail domain">
+    Specify the email domain associated with this entity.
+  </Step>
+</Steps>
+
+### Notification Options
+
+Configure email notifications for the entity:
+
+#### Email Settings
+
+```yaml
+Administrator email: admin@entity.com
+Administrator name: Admin Name
+Reply-to email: noreply@entity.com (optional)
+Reply-to name: System Name
+Email signature: Custom signature for this entity
+Prefix for notifications: [ENTITY-TAG]
+```
+
+<Warning>
+If entity email settings are not configured, the system will inherit from the parent entity or use global settings.
+</Warning>
+
+#### Alert Configuration
+
+<Steps>
+  <Step title="Delay to send emails">
+    Set delay in minutes (0-60) or inherit from parent.
+  </Step>
+  
+  <Step title="Enable notifications by default">
+    Choose whether new users in this entity have notifications enabled.
+  </Step>
+  
+  <Step title="Configure alert thresholds">
+    Set thresholds for:
+    - **Cartridges**: Alert when stock falls below threshold
+    - **Consumables**: Alert for low consumable stock
+    - **Contracts**: Days before contract expiration
+    - **Financial information**: Days before warranty expiration
+    - **Licenses**: Days before license expiration
+    - **Certificates**: Days before certificate expiration
+    - **Domains**: Days before domain expiration
+  </Step>
+</Steps>
+
+### Assistance Tab
+
+Configure helpdesk settings:
+
+#### Ticket Configuration
+
+```yaml
+Calendar: Business hours calendar
+Ticket template: Default template for new tickets
+Change template: Default change template
+Problem template: Default problem template
+Default ticket type: Incident or Request
+```
+
+#### Automatic Actions
+
+<Steps>
+  <Step title="Auto-close tickets">
+    Set delay (in days) to automatically close solved tickets:
+    - Inherit from parent
+    - Never
+    - Immediately
+    - After X days (1-99)
+  </Step>
+  
+  <Step title="Auto-purge tickets">
+    Set delay (in days) to purge closed tickets:
+    - Inherit from parent
+    - Never
+    - Immediately  
+    - After X days (1-3650)
+  </Step>
+  
+  <Step title="Ticket assignment mode">
+    Configure automatic assignment:
+    - Auto-assign by category
+    - Auto-assign by hardware then category
+    - No automatic assignment
+  </Step>
+</Steps>
+
+<Warning>
+Auto-purge permanently deletes tickets. Ensure you have proper backups before enabling.
+</Warning>
+
+#### Satisfaction Surveys
+
+```yaml
+Survey configuration: Disabled/Internal/External URL
+Trigger rate: Percentage of tickets (0-100%)
+Create survey after: Days after ticket closure
+Survey duration: Days survey remains available
+External URL: Link to external survey tool
+```
+
+### Assets Tab
+
+Configure asset management settings:
+
+<Steps>
+  <Step title="Financial information">
+    Enable automatic creation of financial records for new assets.
+  </Step>
+  
+  <Step title="Auto-fill dates">
+    Configure which dates are automatically filled:
+    - Purchase date
+    - Order date
+    - Delivery date
+    - Start date of use
+    - Warranty start date
+    - Decommission date
+  </Step>
+  
+  <Step title="Software entity">
+    Choose the entity where new software items are created:
+    - Current entity
+    - Specific entity
+    - Inherit from parent
+  </Step>
+</Steps>
+
+## Entity Hierarchy Management
+
+### Viewing Entity Tree
+
+The entity selector displays a tree structure:
+
+```
+Root Entity
+├── Entity A
+│   ├── Entity A1
+│   └── Entity A2
+└── Entity B
+    └── Entity B1
+```
+
+### Recursive Rights
+
+When assigning profiles to users:
+- **Recursive**: User has rights to the entity and all child entities
+- **Non-recursive**: User has rights only to the specific entity
+
+<Note>
+Recursive rights automatically include new child entities created in the future.
+</Note>
+
+## Entity Rights Management
+
+### Required Rights
+
+Access control for entities:
+
+```yaml
+VIEW: Read entity information
+UPDATE: Modify entity settings
+UPDATEHELPDESK: Modify helpdesk-specific settings
+notification: Modify notification settings
+infocom: Modify asset financial settings
+config: Modify advanced configuration
+```
+
+See `/inc/entity.class.php:67-121` for field-level rights mapping.
+
+## Entity Selector
+
+Switching between entities:
+
+<Steps>
+  <Step title="Open entity selector">
+    Click the entity name in the top navigation bar.
+  </Step>
+  
+  <Step title="Select entity">
+    - Click entity name: Switch to that entity only
+    - Click icon next to name: Switch to entity and all children (recursive)
+  </Step>
+  
+  <Step title="Show all">
+    Click **Show all** to view data from all entities you have access to.
+  </Step>
+</Steps>
+
+### Entity Search
+
+Use the search box in the entity selector to quickly find entities by name.
+
+## Best Practices
+
+<Card title="Entity Management Tips">
+  - **Plan hierarchy carefully**: Changing entity structure later can be complex
+  - **Use meaningful names**: Entity names should clearly identify the organizational unit
+  - **Configure inheritance**: Use parent entity settings where possible for consistency
+  - **Test recursive rights**: Verify recursive permissions work as expected
+  - **Document structure**: Maintain documentation of your entity hierarchy
+  - **Regular audits**: Periodically review entity assignments and settings
+</Card>
+
+## Common Entity Patterns
+
+### Geographic Structure
+```
+Company (Root)
+├── North America
+│   ├── USA
+│   └── Canada
+└── Europe
+    ├── UK
+    └── France
+```
+
+### Departmental Structure
+```
+Organization (Root)
+├── IT Department
+├── Finance
+├── HR
+└── Operations
+```
+
+### Customer/Client Structure
+```
+Service Provider (Root)
+├── Customer A
+│   ├── Site 1
+│   └── Site 2
+└── Customer B
+```
+
+## Troubleshooting
+
+### Cannot Delete Entity
+
+- **Root entity**: Cannot be deleted (by design)
+- **Has children**: Delete or move child entities first
+- **Has associated data**: Transfer or delete tickets, assets, users first
+- **Insufficient rights**: Requires rights to the entity
+
+### Inheritance Not Working
+
+Check that:
+- Configuration value is set to "Inherit from parent"
+- Parent entity has the setting configured
+- There are no overrides at intermediate levels
+
+See `/inc/entity.class.php:1380-1421` for entity notification inheritance logic.

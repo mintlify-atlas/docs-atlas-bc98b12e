@@ -1,0 +1,360 @@
+---
+title: Document Resource
+description: Upload, download, and manage documents through the ITSM-NG REST API
+---
+
+The Document resource allows you to manage files and documents in ITSM-NG. You can upload files, associate them with other items (tickets, assets, etc.), and download them.
+
+## Document Object
+
+A document object contains these key fields:
+
+<ResponseField name="id" type="integer">
+  Unique document identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Document name/title
+</ResponseField>
+
+<ResponseField name="filename" type="string">
+  Actual filename on disk
+</ResponseField>
+
+<ResponseField name="filepath" type="string">
+  Relative path to the file
+</ResponseField>
+
+<ResponseField name="documentcategories_id" type="integer">
+  Document category ID
+</ResponseField>
+
+<ResponseField name="mime" type="string">
+  MIME type of the file (e.g., `application/pdf`, `image/png`)
+</ResponseField>
+
+<ResponseField name="date_creation" type="datetime">
+  Upload date
+</ResponseField>
+
+<ResponseField name="date_mod" type="datetime">
+  Last modification date
+</ResponseField>
+
+<ResponseField name="users_id" type="integer">
+  User who uploaded the document
+</ResponseField>
+
+<ResponseField name="sha1sum" type="string">
+  SHA1 hash of the file for integrity verification
+</ResponseField>
+
+<ResponseField name="is_blacklisted" type="boolean">
+  Whether the file extension is blacklisted
+</ResponseField>
+
+<ResponseField name="tag" type="string">
+  Optional tag for document organization
+</ResponseField>
+
+## Get a Document
+
+Retrieve document metadata (not the file itself).
+
+```bash cURL
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/Document/123'
+```
+
+### Response Example
+
+```json
+{
+  "id": 123,
+  "name": "Network Diagram",
+  "filename": "network-diagram.pdf",
+  "filepath": "/2024/03/",
+  "documentcategories_id": 5,
+  "mime": "application/pdf",
+  "date_creation": "2024-03-02 10:30:00",
+  "users_id": 42,
+  "sha1sum": "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3"
+}
+```
+
+## Upload a Document
+
+Upload a file to ITSM-NG using multipart/form-data.
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: multipart/form-data' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  -F 'uploadManifest={"input": {"name": "Network Diagram", "_filename": ["network-diagram.pdf"]}};type=application/json' \
+  -F 'filename[0]=@network-diagram.pdf' \
+  'https://your-instance.com/apirest.php/Document/'
+```
+
+<Note>
+  File uploads require the `multipart/form-data` content type. The metadata must be sent in the `uploadManifest` parameter as a JSON string.
+</Note>
+
+### Upload Parameters
+
+<ParamField body="uploadManifest" type="string" required>
+  JSON string containing document metadata
+  
+  <Expandable title="input properties">
+    <ParamField body="name" type="string" required>
+      Document name/title
+    </ParamField>
+    
+    <ParamField body="_filename" type="array" required>
+      Array of filenames being uploaded (e.g., `["file.pdf"]`)
+    </ParamField>
+    
+    <ParamField body="documentcategories_id" type="integer">
+      Document category ID
+    </ParamField>
+    
+    <ParamField body="entities_id" type="integer">
+      Entity ID
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="filename[0]" type="file" required>
+  The actual file to upload (use `@filename` syntax in curl)
+</ParamField>
+
+### Response
+
+```json
+{
+  "id": 124,
+  "message": "Document move succeeded.",
+  "upload_result": {
+    "filename": "network-diagram.pdf",
+    "size": 245680,
+    "filepath": "/2024/03/1234567890_network-diagram.pdf"
+  }
+}
+```
+
+## Upload Multiple Files
+
+You can upload multiple files in a single request:
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: multipart/form-data' \
+  -H "Session-Token: your_session_token" \
+  -F 'uploadManifest={"input": {"name": "Project Files", "_filename": ["doc1.pdf", "doc2.pdf"]}};type=application/json' \
+  -F 'filename[0]=@doc1.pdf' \
+  -F 'filename[1]=@doc2.pdf' \
+  'https://your-instance.com/apirest.php/Document/'
+```
+
+## Download a Document
+
+Download the actual file content of a document.
+
+```bash cURL
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  -H "Accept: application/octet-stream" \
+  'https://your-instance.com/apirest.php/Document/123' > document.pdf
+```
+
+<Note>
+  To download a file, you must include the `Accept: application/octet-stream` header, or add the `alt=media` query parameter.
+</Note>
+
+### Alternative Download Method
+
+You can also use the `alt=media` query parameter:
+
+```bash cURL
+curl -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/Document/123?alt=media' > document.pdf
+```
+
+## Link Document to Items
+
+Associate a document with other items (tickets, computers, users, etc.).
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -d '{
+    "input": {
+      "documents_id": 123,
+      "items_id": 456,
+      "itemtype": "Ticket"
+    }
+  }' \
+  'https://your-instance.com/apirest.php/Document_Item/'
+```
+
+### Link Parameters
+
+<ParamField body="documents_id" type="integer" required>
+  Document ID to link
+</ParamField>
+
+<ParamField body="items_id" type="integer" required>
+  ID of the item to link to
+</ParamField>
+
+<ParamField body="itemtype" type="string" required>
+  Type of item (e.g., `Ticket`, `Computer`, `User`)
+</ParamField>
+
+## Get Documents Linked to an Item
+
+Retrieve all documents associated with an item.
+
+```bash cURL
+curl -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/Ticket/456?with_documents=true'
+```
+
+Alternatively, search for document links:
+
+```bash cURL
+curl -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/Document_Item/?searchText[itemtype]=Ticket&searchText[items_id]=456'
+```
+
+## Update Document Metadata
+
+Update document information (not the file itself).
+
+```bash cURL
+curl -X PUT \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -d '{
+    "input": {
+      "name": "Updated Network Diagram",
+      "documentcategories_id": 6
+    }
+  }' \
+  'https://your-instance.com/apirest.php/Document/123'
+```
+
+<Warning>
+  You cannot update the actual file content. To replace a file, delete the old document and upload a new one.
+</Warning>
+
+## Delete a Document
+
+Delete a document and its associated file.
+
+```bash cURL
+curl -X DELETE \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/Document/123?force_purge=true'
+```
+
+<ParamField query="force_purge" type="boolean" default="false">
+  If `true`, permanently delete the document and file. If `false`, move to trash.
+</ParamField>
+
+## Common Use Cases
+
+<Accordion title="Upload document and attach to ticket">
+  ```bash
+  # 1. Upload the document
+  DOC_ID=$(curl -X POST \
+    -H 'Content-Type: multipart/form-data' \
+    -H "Session-Token: $SESSION_TOKEN" \
+    -F 'uploadManifest={"input": {"name": "Screenshot", "_filename": ["screenshot.png"]}};type=application/json' \
+    -F 'filename[0]=@screenshot.png' \
+    'https://your-instance.com/apirest.php/Document/' | jq -r '.id')
+  
+  # 2. Link to ticket
+  curl -X POST \
+    -H 'Content-Type: application/json' \
+    -H "Session-Token: $SESSION_TOKEN" \
+    -d '{
+      "input": {
+        "documents_id": '$DOC_ID',
+        "items_id": 456,
+        "itemtype": "Ticket"
+      }
+    }' \
+    'https://your-instance.com/apirest.php/Document_Item/'
+  ```
+</Accordion>
+
+<Accordion title="Download all documents from a ticket">
+  ```bash
+  # Get document links
+  curl -X GET \
+    -H "Session-Token: $SESSION_TOKEN" \
+    'https://your-instance.com/apirest.php/Ticket/456/Document_Item' | \
+    jq -r '.[] | .documents_id' | \
+  while read doc_id; do
+    # Download each document
+    curl -X GET \
+      -H "Session-Token: $SESSION_TOKEN" \
+      -H "Accept: application/octet-stream" \
+      "https://your-instance.com/apirest.php/Document/$doc_id" > "document_$doc_id"
+  done
+  ```
+</Accordion>
+
+<Accordion title="Search documents by category">
+  ```bash
+  curl -g -X GET \
+    -H "Session-Token: $SESSION_TOKEN" \
+    'https://your-instance.com/apirest.php/search/Document/?criteria[0][field]=2&criteria[0][searchtype]=equals&criteria[0][value]=5'
+  ```
+  
+  Where field 2 is `documentcategories_id=5`.
+</Accordion>
+
+## File Type Restrictions
+
+ITSM-NG has security restrictions on file uploads:
+
+- Executable files (`.exe`, `.bat`, `.sh`) are typically blacklisted
+- PHP files and scripts are blocked for security
+- File types can be configured in **Setup > Dropdowns > Document types**
+- Maximum file size is determined by PHP settings (`upload_max_filesize`, `post_max_size`)
+
+<Info>
+  Check your document categories and allowed file extensions in the ITSM-NG interface under **Setup > Dropdowns > Document types**.
+</Info>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Categories" icon="folder-tree">
+    Organize documents with categories for easier management and search.
+  </Card>
+  
+  <Card title="Meaningful Names" icon="tag">
+    Use descriptive names for documents, not just filenames.
+  </Card>
+  
+  <Card title="Link to Context" icon="link">
+    Always link documents to relevant items (tickets, assets) for context.
+  </Card>
+  
+  <Card title="Regular Cleanup" icon="broom">
+    Periodically review and remove obsolete documents to save storage.
+  </Card>
+</CardGroup>

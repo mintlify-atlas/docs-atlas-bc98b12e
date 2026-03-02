@@ -1,0 +1,416 @@
+---
+title: User Resource
+description: Manage users and their profiles through the ITSM-NG REST API
+---
+
+The User resource allows you to manage users, their profiles, and authentication settings in ITSM-NG.
+
+## User Object
+
+A user object contains the following key fields:
+
+<ResponseField name="id" type="integer">
+  Unique user identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Username for login (unique)
+</ResponseField>
+
+<ResponseField name="realname" type="string">
+  User's last name
+</ResponseField>
+
+<ResponseField name="firstname" type="string">
+  User's first name
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Primary email address
+</ResponseField>
+
+<ResponseField name="phone" type="string">
+  Phone number
+</ResponseField>
+
+<ResponseField name="mobile" type="string">
+  Mobile phone number
+</ResponseField>
+
+<ResponseField name="locations_id" type="integer">
+  Default location ID
+</ResponseField>
+
+<ResponseField name="language" type="string">
+  Preferred interface language
+</ResponseField>
+
+<ResponseField name="usertitles_id" type="integer">
+  User title ID (Mr., Mrs., etc.)
+</ResponseField>
+
+<ResponseField name="usercategories_id" type="integer">
+  User category ID
+</ResponseField>
+
+<ResponseField name="comment" type="string">
+  Additional notes about the user
+</ResponseField>
+
+<ResponseField name="is_active" type="boolean">
+  Whether the user account is active
+</ResponseField>
+
+<ResponseField name="is_deleted" type="boolean">
+  Whether the user is in trash
+</ResponseField>
+
+<ResponseField name="authtype" type="integer">
+  Authentication type (1=Local, 2=LDAP, 3=Mail, 4=External)
+</ResponseField>
+
+<ResponseField name="auths_id" type="integer">
+  Authentication source ID (for LDAP, mail servers)
+</ResponseField>
+
+<ResponseField name="date_creation" type="datetime">
+  Account creation date
+</ResponseField>
+
+<ResponseField name="date_mod" type="datetime">
+  Last modification date
+</ResponseField>
+
+<ResponseField name="last_login" type="datetime">
+  Last login timestamp
+</ResponseField>
+
+## Get a User
+
+Retrieve a specific user by ID.
+
+```bash cURL
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/User/42?expand_dropdowns=true'
+```
+
+### Query Parameters
+
+<ParamField query="expand_dropdowns" type="boolean" default="false">
+  Show dropdown names instead of IDs
+</ParamField>
+
+<ParamField query="with_logs" type="boolean" default="false">
+  Include user activity history
+</ParamField>
+
+### Response Example
+
+```json
+{
+  "id": 42,
+  "name": "john.doe",
+  "realname": "Doe",
+  "firstname": "John",
+  "email": "john.doe@company.com",
+  "phone": "+1-555-0123",
+  "is_active": 1,
+  "authtype": 1,
+  "locations_id": "Office - Floor 2",
+  "language": "en_GB",
+  "date_creation": "2023-01-15 10:00:00",
+  "last_login": "2024-03-02 08:30:00"
+}
+```
+
+## Get All Users
+
+Retrieve a list of users with pagination.
+
+```bash cURL
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/User/?range=0-49'
+```
+
+<ParamField query="range" type="string" default="0-50">
+  Pagination range (e.g., `0-49` for first 50 users)
+</ParamField>
+
+<ParamField query="sort" type="integer" default="1">
+  Field ID to sort by
+</ParamField>
+
+<ParamField query="order" type="string" default="ASC">
+  Sort order: `ASC` or `DESC`
+</ParamField>
+
+## Create a User
+
+Add a new user to the system.
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  -d '{
+    "input": {
+      "name": "jane.smith",
+      "realname": "Smith",
+      "firstname": "Jane",
+      "email": "jane.smith@company.com",
+      "password": "SecurePass123!",
+      "password2": "SecurePass123!",
+      "is_active": 1,
+      "authtype": 1
+    }
+  }' \
+  'https://your-instance.com/apirest.php/User/'
+```
+
+### Request Body
+
+<ParamField body="input" type="object" required>
+  User data object
+  
+  <Expandable title="properties">
+    <ParamField body="name" type="string" required>
+      Unique username for login
+    </ParamField>
+    
+    <ParamField body="realname" type="string">
+      Last name
+    </ParamField>
+    
+    <ParamField body="firstname" type="string">
+      First name
+    </ParamField>
+    
+    <ParamField body="email" type="string">
+      Email address
+    </ParamField>
+    
+    <ParamField body="password" type="string">
+      Password (for local auth only)
+    </ParamField>
+    
+    <ParamField body="password2" type="string">
+      Password confirmation (must match password)
+    </ParamField>
+    
+    <ParamField body="is_active" type="boolean" default="true">
+      Whether the account is active
+    </ParamField>
+    
+    <ParamField body="authtype" type="integer" default="1">
+      Authentication type (1=Local, 2=LDAP)
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<Warning>
+  When creating users with local authentication (`authtype=1`), both `password` and `password2` must be provided and match.
+</Warning>
+
+### Response
+
+```json
+{
+  "id": 43,
+  "message": ""
+}
+```
+
+## Update a User
+
+Update existing user information.
+
+```bash cURL
+curl -X PUT \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  -d '{
+    "input": {
+      "email": "jane.smith.new@company.com",
+      "phone": "+1-555-9999"
+    }
+  }' \
+  'https://your-instance.com/apirest.php/User/43'
+```
+
+## Delete a User
+
+Move a user to trash or permanently delete.
+
+```bash cURL
+curl -X DELETE \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/User/43?force_purge=false'
+```
+
+<ParamField query="force_purge" type="boolean" default="false">
+  If `true`, permanently delete the user. If `false`, move to trash.
+</ParamField>
+
+## User Profiles
+
+Users can have multiple profiles assigned across different entities.
+
+### Get User's Profiles
+
+```bash cURL
+curl -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/User/42/Profile_User'
+```
+
+This returns all profile assignments for the user.
+
+### Assign Profile to User
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -d '{
+    "input": {
+      "users_id": 42,
+      "profiles_id": 4,
+      "entities_id": 0,
+      "is_recursive": 1
+    }
+  }' \
+  'https://your-instance.com/apirest.php/Profile_User/'
+```
+
+## User Groups
+
+Users can be members of groups for organizing and permission management.
+
+### Get User's Groups
+
+```bash cURL
+curl -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/User/42/Group_User'
+```
+
+### Add User to Group
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -d '{
+    "input": {
+      "users_id": 42,
+      "groups_id": 5
+    }
+  }' \
+  'https://your-instance.com/apirest.php/Group_User/'
+```
+
+## Search Users
+
+Search for users using criteria.
+
+```bash cURL
+curl -g -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/search/User/?criteria[0][field]=1&criteria[0][searchtype]=contains&criteria[0][value]=john'
+```
+
+This searches for users with "john" in their username.
+
+## Common Use Cases
+
+<Accordion title="Get current logged-in user">
+  Use the special endpoint to get the current session user:
+  
+  ```bash
+  curl -X GET \
+    -H "Session-Token: your_session_token" \
+    'https://your-instance.com/apirest.php/getFullSession'
+  ```
+  
+  The response includes user ID in `session.glpiID`.
+</Accordion>
+
+<Accordion title="Find inactive users">
+  ```bash
+  curl -g -X GET \
+    -H "Session-Token: your_session_token" \
+    'https://your-instance.com/apirest.php/search/User/?criteria[0][field]=8&criteria[0][searchtype]=equals&criteria[0][value]=0'
+  ```
+  
+  Where field 8 is `is_active=0`.
+</Accordion>
+
+<Accordion title="Update user password">
+  ```bash
+  curl -X PUT \
+    -H 'Content-Type: application/json' \
+    -H "Session-Token: your_session_token" \
+    -d '{
+      "input": {
+        "password": "NewSecurePass456!",
+        "password2": "NewSecurePass456!"
+      }
+    }' \
+    'https://your-instance.com/apirest.php/User/42'
+  ```
+</Accordion>
+
+<Accordion title="Get user's picture">
+  ITSM-NG provides a special endpoint for user profile pictures:
+  
+  ```bash
+  curl -X GET \
+    -H "Session-Token: your_session_token" \
+    'https://your-instance.com/apirest.php/User/42/Picture' > profile.jpg
+  ```
+  
+  Returns 200 with image data, or 204 if no picture exists.
+</Accordion>
+
+## User Preferences
+
+Users have preferences stored that control their interface settings.
+
+```bash cURL
+curl -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/User/42/UserPreference'
+```
+
+Preferences include language, date format, display options, and notification settings.
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Strong Passwords" icon="lock">
+    Enforce password policies and use strong passwords for local authentication users.
+  </Card>
+  
+  <Card title="Prefer External Auth" icon="id-card">
+    Use LDAP/OIDC authentication instead of local accounts for better security.
+  </Card>
+  
+  <Card title="Regular Audits" icon="magnifying-glass">
+    Regularly review user accounts and disable inactive users.
+  </Card>
+  
+  <Card title="Minimal Privileges" icon="shield-halved">
+    Assign only necessary profiles and permissions following least privilege principle.
+  </Card>
+</CardGroup>

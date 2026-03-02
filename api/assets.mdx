@@ -1,0 +1,366 @@
+---
+title: Asset Resources
+description: Manage IT assets (computers, monitors, phones, etc.) through the REST API
+---
+
+ITSM-NG provides comprehensive asset management through its REST API. You can manage various asset types including computers, monitors, network equipment, phones, printers, and more.
+
+## Asset Types (Itemtypes)
+
+The following asset types are available:
+
+- `Computer` - Desktop computers, laptops, servers
+- `Monitor` - Display monitors
+- `NetworkEquipment` - Switches, routers, firewalls
+- `Peripheral` - External devices (keyboards, mice, etc.)
+- `Phone` - Desk phones and VoIP devices
+- `Printer` - Printers and multifunction devices
+- `SoftwareLicense` - Software licenses
+- `CartridgeItem` - Printer cartridges
+- `ConsumableItem` - Consumable items
+
+## Computer Object
+
+A computer asset contains these key fields:
+
+<ResponseField name="id" type="integer">
+  Unique computer identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Computer name/hostname
+</ResponseField>
+
+<ResponseField name="serial" type="string">
+  Serial number
+</ResponseField>
+
+<ResponseField name="otherserial" type="string">
+  Inventory number or other serial
+</ResponseField>
+
+<ResponseField name="entities_id" type="integer">
+  Entity ID to which the computer belongs
+</ResponseField>
+
+<ResponseField name="locations_id" type="integer">
+  Physical location ID
+</ResponseField>
+
+<ResponseField name="manufacturers_id" type="integer">
+  Manufacturer ID (e.g., Dell, HP, Lenovo)
+</ResponseField>
+
+<ResponseField name="computermodels_id" type="integer">
+  Computer model ID
+</ResponseField>
+
+<ResponseField name="computertypes_id" type="integer">
+  Computer type ID (Desktop, Laptop, Server)
+</ResponseField>
+
+<ResponseField name="users_id" type="integer">
+  User ID of the computer owner
+</ResponseField>
+
+<ResponseField name="users_id_tech" type="integer">
+  Technician responsible for this computer
+</ResponseField>
+
+<ResponseField name="states_id" type="integer">
+  State ID (In use, In stock, etc.)
+</ResponseField>
+
+<ResponseField name="uuid" type="string">
+  System UUID
+</ResponseField>
+
+<ResponseField name="date_creation" type="datetime">
+  Asset creation date
+</ResponseField>
+
+<ResponseField name="date_mod" type="datetime">
+  Last modification date
+</ResponseField>
+
+<ResponseField name="is_deleted" type="boolean">
+  Whether the computer is in trash
+</ResponseField>
+
+<ResponseField name="is_dynamic" type="boolean">
+  Whether the computer is managed by inventory agent
+</ResponseField>
+
+## Get an Asset
+
+Retrieve a specific asset by ID.
+
+```bash cURL
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/Computer/71?expand_dropdowns=true'
+```
+
+### Additional Data Options
+
+For Computer, NetworkEquipment, Peripheral, Phone, and Printer assets, you can retrieve additional associated data:
+
+<ParamField query="with_devices" type="boolean" default="false">
+  Retrieve associated hardware components (processors, memory, disk drives, etc.)
+</ParamField>
+
+<ParamField query="with_disks" type="boolean" default="false">
+  Retrieve associated file systems and partitions (Computer only)
+</ParamField>
+
+<ParamField query="with_softwares" type="boolean" default="false">
+  Retrieve installed software (Computer only)
+</ParamField>
+
+<ParamField query="with_connections" type="boolean" default="false">
+  Retrieve directly connected peripherals and printers (Computer only)
+</ParamField>
+
+<ParamField query="with_networkports" type="boolean" default="false">
+  Retrieve network ports and connections
+</ParamField>
+
+<ParamField query="with_infocoms" type="boolean" default="false">
+  Retrieve financial and administrative information
+</ParamField>
+
+<ParamField query="with_contracts" type="boolean" default="false">
+  Retrieve associated contracts
+</ParamField>
+
+<ParamField query="with_documents" type="boolean" default="false">
+  Retrieve associated documents
+</ParamField>
+
+<ParamField query="with_tickets" type="boolean" default="false">
+  Retrieve associated tickets
+</ParamField>
+
+<ParamField query="with_logs" type="boolean" default="false">
+  Retrieve change history
+</ParamField>
+
+### Response Example
+
+```json
+{
+  "id": 71,
+  "entities_id": "Root Entity",
+  "name": "LAPTOP-2024",
+  "serial": "ABC123456",
+  "otherserial": "INV-2024-001",
+  "contact": "john.doe",
+  "manufacturers_id": "Lenovo",
+  "computermodels_id": "ThinkPad X1 Carbon",
+  "computertypes_id": "Laptop",
+  "users_id": "John Doe",
+  "locations_id": "Office Floor 2",
+  "states_id": "In use",
+  "uuid": "4201F465-2759-A9FB-11BC-CDB864681F4B",
+  "date_mod": "2024-03-02 09:33:41",
+  "is_deleted": 0,
+  "is_dynamic": 1
+}
+```
+
+## Get All Assets
+
+Retrieve a list of assets with pagination.
+
+```bash cURL
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/Computer/?range=0-49'
+```
+
+<ParamField query="range" type="string" default="0-50">
+  Pagination range (e.g., `0-49` for first 50 items)
+</ParamField>
+
+<ParamField query="sort" type="integer" default="1">
+  Field ID to sort by
+</ParamField>
+
+<ParamField query="order" type="string" default="ASC">
+  Sort order: `ASC` or `DESC`
+</ParamField>
+
+## Create an Asset
+
+Add a new asset to the inventory.
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  -d '{
+    "input": {
+      "name": "LAPTOP-2024",
+      "serial": "ABC123456",
+      "entities_id": 0,
+      "computermodels_id": 11,
+      "computertypes_id": 1,
+      "users_id": 42,
+      "locations_id": 4
+    }
+  }' \
+  'https://your-instance.com/apirest.php/Computer/'
+```
+
+### Bulk Creation
+
+You can create multiple assets in one request:
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -d '{
+    "input": [
+      {
+        "name": "LAPTOP-2024-01",
+        "serial": "ABC123456"
+      },
+      {
+        "name": "LAPTOP-2024-02",
+        "serial": "ABC123457"
+      }
+    ]
+  }' \
+  'https://your-instance.com/apirest.php/Computer/'
+```
+
+## Update an Asset
+
+Update existing asset information.
+
+```bash cURL
+curl -X PUT \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  -d '{
+    "input": {
+      "locations_id": 5,
+      "states_id": 2
+    }
+  }' \
+  'https://your-instance.com/apirest.php/Computer/71'
+```
+
+## Delete an Asset
+
+Move an asset to trash or permanently delete it.
+
+```bash cURL
+curl -X DELETE \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/Computer/71?force_purge=false'
+```
+
+<ParamField query="force_purge" type="boolean" default="false">
+  If `true`, permanently delete the asset. If `false`, move to trash.
+</ParamField>
+
+## Search Assets
+
+Search for assets using specific criteria.
+
+```bash cURL
+curl -g -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/search/Computer/?criteria[0][field]=1&criteria[0][searchtype]=contains&criteria[0][value]=LAPTOP'
+```
+
+This searches for all computers with "LAPTOP" in their name.
+
+## Common Use Cases
+
+<Accordion title="Get computer with all details">
+  Retrieve a computer with all associated data:
+  
+  ```bash
+  curl -X GET \
+    -H "Session-Token: your_session_token" \
+    'https://your-instance.com/apirest.php/Computer/71?with_devices=true&with_softwares=true&with_networkports=true&with_infocoms=true&with_logs=true'
+  ```
+</Accordion>
+
+<Accordion title="Find all laptops in a specific location">
+  ```bash
+  curl -g -X GET \
+    -H "Session-Token: your_session_token" \
+    'https://your-instance.com/apirest.php/search/Computer/?criteria[0][field]=3&criteria[0][searchtype]=equals&criteria[0][value]=5&criteria[1][link]=AND&criteria[1][field]=4&criteria[1][searchtype]=equals&criteria[1][value]=1'
+  ```
+  
+  Where field 3 is locations_id=5 and field 4 is computertypes_id=1 (laptop).
+</Accordion>
+
+<Accordion title="Update multiple assets at once">
+  ```bash
+  curl -X PUT \
+    -H 'Content-Type: application/json' \
+    -H "Session-Token: your_session_token" \
+    -d '{
+      "input": [
+        {"id": 71, "states_id": 3},
+        {"id": 72, "states_id": 3}
+      ]
+    }' \
+    'https://your-instance.com/apirest.php/Computer/'
+  ```
+</Accordion>
+
+## Financial Information (Infocoms)
+
+Assets can have associated financial information:
+
+```bash cURL
+curl -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/Computer/71?with_infocoms=true'
+```
+
+This includes:
+- Purchase date and price
+- Warranty information
+- Order number and delivery information
+- Supplier details
+- Budget allocation
+
+<Note>
+  Financial information is stored in the `Infocom` itemtype and linked to assets.
+</Note>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Serial Numbers" icon="barcode">
+    Always populate serial numbers for unique asset identification and inventory tracking.
+  </Card>
+  
+  <Card title="Leverage Auto-Inventory" icon="robot">
+    Use GLPI Agent for automatic inventory updates (sets `is_dynamic=1`).
+  </Card>
+  
+  <Card title="Link to Users" icon="user">
+    Assign assets to users for accountability and asset tracking.
+  </Card>
+  
+  <Card title="Use Locations" icon="location-dot">
+    Always specify location for physical asset tracking and management.
+  </Card>
+</CardGroup>

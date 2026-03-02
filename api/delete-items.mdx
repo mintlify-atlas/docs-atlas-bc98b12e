@@ -1,0 +1,467 @@
+---
+title: DELETE Operations
+description: Delete or purge items from ITSM-NG using DELETE requests
+---
+
+The ITSM-NG REST API supports deleting items using the DELETE method. Items can be soft-deleted (moved to trash) or permanently purged depending on the itemtype and parameters.
+
+## Delete Item(s)
+
+Delete one or more items from ITSM-NG.
+
+### Endpoint
+
+```
+DELETE /apirest.php/:itemtype/:id
+```
+
+### Headers
+
+<ParamField header="Session-Token" type="string" required>
+  Session token obtained from [initSession](/api/init-session)
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Optional authorization string from API configuration
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+### URL Parameters
+
+<ParamField path="id" type="integer">
+  The unique identifier of the item to delete. Optional if provided in the request body.
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="force_purge" type="boolean" default={false}>
+  If the itemtype has a trashbin, set to `true` to permanently delete (purge) instead of soft delete
+</ParamField>
+
+<ParamField query="history" type="boolean" default={true}>
+  Set to `false` to disable saving deletion in global history
+</ParamField>
+
+### Request Body (Alternative)
+
+<ParamField body="input" type="object | array">
+  For single item: an object with `id` field
+  
+  For multiple items: an array of objects, each containing an `id` field
+</ParamField>
+
+<ParamField body="force_purge" type="boolean" default={false}>
+  Force permanent deletion (can also be set via query parameter)
+</ParamField>
+
+<ParamField body="history" type="boolean" default={true}>
+  Enable/disable history logging (can also be set via query parameter)
+</ParamField>
+
+<Note>
+  The `id` parameter in the URL takes precedence over the `id` in the request body.
+</Note>
+
+### Response
+
+<ResponseField name="id" type="boolean">
+  `true` if deletion succeeded, `false` if failed
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message or error description
+</ResponseField>
+
+Returns an array of objects with deletion status for each item.
+
+### Response Codes
+
+- `200 OK` - Multiple items deleted
+- `204 No Content` - Single item deleted successfully
+- `207 Multi-Status` - Bulk operation with some failures
+- `400 Bad Request` - Invalid input parameters
+- `401 Unauthorized` - Invalid or missing session token
+- `404 Not Found` - Item not found
+
+---
+
+## Delete Single Item (URL ID)
+
+Delete a single item by specifying the ID in the URL.
+
+### Example Request
+
+```bash
+curl -X DELETE \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+'http://path/to/glpi/apirest.php/Computer/16?force_purge=true'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "16": true,
+    "message": ""
+  }
+]
+```
+
+---
+
+## Delete Single Item (Body ID)
+
+Delete a single item by specifying the ID in the request body.
+
+### Example Request
+
+```bash
+curl -X DELETE \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+-d '{"input": {"id": 11}, "force_purge": true}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "11": true,
+    "message": ""
+  }
+]
+```
+
+---
+
+## Delete Multiple Items (Bulk)
+
+Delete multiple items in a single request.
+
+### Example Request
+
+```bash
+curl -X DELETE \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+-d '{"input": [{"id": 16}, {"id": 17}]}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "16": true,
+    "message": ""
+  },
+  {
+    "17": false,
+    "message": "Item not found"
+  }
+]
+```
+
+<Warning>
+  Bulk deletion returns a 207 Multi-Status response. Check each item's status individually to identify failures.
+</Warning>
+
+---
+
+## Soft Delete vs. Permanent Delete
+
+### Soft Delete (Trashbin)
+
+Many itemtypes support soft deletion (moving to trash).
+
+#### Default Behavior
+
+```bash
+curl -X DELETE \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+'http://path/to/glpi/apirest.php/Computer/16'
+```
+
+This marks the item as deleted (`is_deleted = 1`) but keeps it in the database. The item can be restored from the trashbin.
+
+### Permanent Delete (Purge)
+
+Force permanent deletion using `force_purge=true`.
+
+#### Example Request
+
+```bash
+curl -X DELETE \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+'http://path/to/glpi/apirest.php/Computer/16?force_purge=true'
+```
+
+This permanently removes the item from the database. **This action cannot be undone.**
+
+<Warning>
+  Permanent deletion (`force_purge=true`) cannot be undone. Use with caution.
+</Warning>
+
+### Two-Step Deletion
+
+Some items must be soft-deleted before they can be purged.
+
+#### Step 1: Soft Delete
+
+```bash
+curl -X DELETE \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+'http://path/to/glpi/apirest.php/Computer/16'
+```
+
+#### Step 2: Purge
+
+```bash
+curl -X DELETE \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+'http://path/to/glpi/apirest.php/Computer/16?force_purge=true'
+```
+
+<Note>
+  If you try to purge an item that hasn't been soft-deleted first, you may receive an `ERROR_NOT_DELETED` error.
+</Note>
+
+---
+
+## Disabling History
+
+By default, all deletions are recorded in GLPI's history. You can disable this for performance reasons.
+
+### Example Request
+
+```bash
+curl -X DELETE \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+'http://path/to/glpi/apirest.php/Computer/16?force_purge=true&history=false'
+```
+
+<Info>
+  Disabling history can improve performance for bulk deletions but removes audit trail capabilities.
+</Info>
+
+---
+
+## Itemtype-Specific Behavior
+
+### Items with Trashbin
+
+These itemtypes support soft deletion:
+
+- Computer
+- Monitor
+- Printer
+- NetworkEquipment
+- Peripheral
+- Phone
+- Ticket
+- Problem
+- Change
+- User
+- Group
+- And most other asset/ITIL types
+
+### Items without Trashbin
+
+Some itemtypes are always permanently deleted:
+
+- Log entries
+- Links (relations between items)
+- Configuration items
+- Some system tables
+
+For these items, `force_purge` is ignored as deletion is always permanent.
+
+---
+
+## Cascading Deletions
+
+Deleting certain items triggers cascading effects:
+
+### Computer Deletion
+
+Deleting a computer also removes:
+
+- Associated devices (processors, memory, etc.)
+- Network ports
+- Software installations
+- Connections to peripherals
+
+### User Deletion
+
+Deleting a user affects:
+
+- Assigned tickets (reassigned or unassigned)
+- Group memberships
+- Authorizations
+
+### Entity Deletion
+
+Deleting an entity cascades to:
+
+- All items within the entity
+- Sub-entities (if recursive)
+
+<Warning>
+  Cascading deletions can affect many related items. Review dependencies before deleting critical items.
+</Warning>
+
+---
+
+## Error Handling
+
+### Common Errors
+
+<ResponseField name="ERROR_GLPI_DELETE" type="error">
+  Unable to delete the item. Check GLPI logs for details.
+</ResponseField>
+
+<ResponseField name="ERROR_GLPI_PARTIAL_DELETE" type="error">
+  Some items in bulk operation failed. Check the response array for individual results.
+</ResponseField>
+
+<ResponseField name="ERROR_ITEM_NOT_FOUND" type="error">
+  The specified item ID does not exist or has already been deleted.
+</ResponseField>
+
+<ResponseField name="ERROR_RIGHT_MISSING" type="error">
+  User lacks permission to delete items of this type.
+</ResponseField>
+
+<ResponseField name="ERROR_NOT_DELETED" type="error">
+  You must soft-delete the item before permanently purging it.
+</ResponseField>
+
+### Handling Partial Failures
+
+When deleting multiple items, some may succeed while others fail:
+
+```json
+[
+  {
+    "16": true,
+    "message": ""
+  },
+  {
+    "17": false,
+    "message": "Item not found"
+  },
+  {
+    "18": false,
+    "message": "You don't have permission to perform this action."
+  }
+]
+```
+
+Parse the response array to identify which items were successfully deleted.
+
+---
+
+## Best Practices
+
+<Tip>
+  **Verify Before Purge**: Always verify items before using `force_purge=true`. Permanent deletions cannot be recovered.
+</Tip>
+
+<Tip>
+  **Use Soft Delete**: Prefer soft deletion (default) over permanent deletion to maintain data integrity and audit trails.
+</Tip>
+
+<Tip>
+  **Check Dependencies**: Before deleting items with many relationships (users, entities, etc.), review dependencies to avoid unintended cascading effects.
+</Tip>
+
+<Tip>
+  **Bulk Deletions**: Use bulk deletion for multiple items instead of individual requests to improve performance.
+</Tip>
+
+<Warning>
+  **Permission Checks**: Ensure users have appropriate delete permissions. Some profiles may only have soft-delete rights, not purge rights.
+</Warning>
+
+<Note>
+  **Restore Capability**: Items that are soft-deleted can be restored from the GLPI interface or via API by updating the `is_deleted` field to `0`.
+</Note>
+
+<Info>
+  **History Management**: Keep history enabled (`history=true`) in production environments for compliance and audit purposes.
+</Info>
+
+---
+
+## Restoring Deleted Items
+
+To restore a soft-deleted item, use the [UPDATE endpoint](/api/update-items) to set `is_deleted` to `false`:
+
+```bash
+curl -X PUT \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-d '{"input": {"id": 16, "is_deleted": false}}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```
+
+This only works for items that were soft-deleted. Purged items cannot be restored.
+
+---
+
+## Advanced Examples
+
+### Delete with Query Parameters
+
+```bash
+curl -X DELETE \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+'http://path/to/glpi/apirest.php/Computer/16?force_purge=true&history=false'
+```
+
+### Delete with Body Parameters
+
+```bash
+curl -X DELETE \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-d '{
+  "input": {"id": 16},
+  "force_purge": true,
+  "history": false
+}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```
+
+### Bulk Delete with Mixed Parameters
+
+```bash
+curl -X DELETE \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-d '{
+  "input": [
+    {"id": 16},
+    {"id": 17},
+    {"id": 18}
+  ],
+  "force_purge": false,
+  "history": true
+}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```

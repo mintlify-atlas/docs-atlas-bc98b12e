@@ -1,0 +1,290 @@
+---
+title: Ticket Management Guide
+description: Complete guide to managing tickets in ITSM-NG, from creation to resolution
+---
+
+# Ticket Management Guide
+
+Tickets are the core of ITSM-NG's service management system. This guide covers everything you need to know about creating, managing, and resolving tickets efficiently.
+
+## Creating a New Ticket
+
+<Steps>
+  <Step title="Access the Ticket Creation Form">
+    Navigate to **Assistance** > **Create a ticket** in the main menu, or use the keyboard shortcut `Alt+T`.
+  </Step>
+
+  <Step title="Fill in Basic Information">
+    - **Title**: Enter a clear, descriptive subject for the ticket
+    - **Type**: Select either "Incident" or "Request"
+    - **Category**: Choose the appropriate category from the dropdown
+    - **Requester**: Add the user(s) requesting assistance
+    - **Description**: Provide detailed information about the issue or request
+  </Step>
+
+  <Step title="Set Priority and Urgency">
+    - **Urgency**: Rate how quickly the issue needs resolution
+    - **Impact**: Assess how many users or services are affected
+    - **Priority**: Automatically calculated based on urgency and impact
+  </Step>
+
+  <Step title="Assign and Link Assets">
+    - **Assign to**: Select technician, group, or supplier
+    - **Associated items**: Link related computers, software, or other assets
+    - **Location**: Specify the physical location if relevant
+  </Step>
+
+  <Step title="Submit the Ticket">
+    Click **Add** to create the ticket. You'll be redirected to the ticket details page.
+  </Step>
+</Steps>
+
+<Note>
+  Use the keyboard shortcut `Shift+P` to quickly jump to ticket processing once a ticket is open.
+</Note>
+
+## Understanding Ticket Status
+
+Tickets progress through different statuses during their lifecycle:
+
+| Status | Description |
+|--------|-------------|
+| **New** | Ticket just created, awaiting assignment |
+| **Assigned** | Ticket assigned to a technician or group |
+| **Processing** | Work is actively being performed |
+| **Pending** | Awaiting external input or action |
+| **Solved** | Solution provided, awaiting approval |
+| **Closed** | Ticket completed and closed |
+
+## Working with Tickets
+
+### Viewing Your Tickets
+
+Access different ticket views based on your role:
+
+- **My tickets**: Tickets where you're the requester
+- **Tickets to follow up**: Tickets you're observing
+- **Assigned to me**: Tickets assigned to you
+- **Group tickets**: Tickets assigned to your groups
+
+### Processing a Ticket
+
+<Steps>
+  <Step title="Open the Ticket">
+    Click on the ticket number to view full details. The timeline shows all activity.
+  </Step>
+
+  <Step title="Add a Follow-up">
+    - Click **Add a follow-up** in the timeline
+    - Enter your update or communication
+    - Choose whether to notify requesters
+    - Set as **Public** (visible to requester) or **Private** (internal only)
+  </Step>
+
+  <Step title="Create a Task">
+    - Click **Add a task** for internal tracking
+    - Assign the task to a technician
+    - Set task duration and status
+    - Tasks are always private to technicians
+  </Step>
+
+  <Step title="Update Status">
+    Change the ticket status as work progresses using the **Status** dropdown.
+  </Step>
+</Steps>
+
+### Taking Ticket Ownership
+
+If you have the appropriate rights:
+
+- Click **Take** to assign the ticket to yourself
+- Or click **Assign** to assign to another technician or group
+
+<Warning>
+  You cannot take ownership of closed or deleted tickets.
+</Warning>
+
+## Adding Solutions
+
+<Steps>
+  <Step title="Navigate to Solution">
+    In the ticket timeline, click **Add a solution**.
+  </Step>
+
+  <Step title="Select Solution Type">
+    Choose from predefined solution types or create a custom one.
+  </Step>
+
+  <Step title="Enter Solution Details">
+    Provide a clear description of what resolved the issue. This will be visible to the requester.
+  </Step>
+
+  <Step title="Submit for Approval">
+    Click **Add** to submit the solution. The ticket status changes to **Solved**.
+  </Step>
+</Steps>
+
+<Note>
+  Requesters can approve or refuse the solution. If approved, the ticket automatically closes.
+</Note>
+
+## Service Level Agreements (SLA/OLA)
+
+### Understanding SLA and OLA
+
+- **SLA (Service Level Agreement)**: External commitment to requesters
+  - **Time to Own (TTO)**: Maximum time to assign the ticket
+  - **Time to Resolve (TTR)**: Maximum time to solve the ticket
+
+- **OLA (Operating Level Agreement)**: Internal performance targets
+  - Same TTO/TTR metrics but for internal tracking
+
+### SLA Indicators
+
+Tickets display SLA information prominently:
+
+- 🟢 **Green**: Within SLA targets
+- 🟡 **Yellow**: Approaching deadline
+- 🔴 **Red**: SLA breached
+
+<Tip>
+  Use the SLA countdown to prioritize your work and meet service commitments.
+</Tip>
+
+## Ticket Validation
+
+For tickets requiring approval:
+
+<Steps>
+  <Step title="Request Validation">
+    Add validators when creating or updating the ticket in the **Validation** tab.
+  </Step>
+
+  <Step title="Validator Reviews">
+    Validators receive notifications and can:
+    - Approve the ticket
+    - Refuse with comments
+    - Request more information
+  </Step>
+
+  <Step title="Track Validation Status">
+    View validation progress in the **Validation** tab.
+  </Step>
+</Steps>
+
+## Linking Related Items
+
+### Link Tickets Together
+
+- **Duplicate**: Mark as duplicate of another ticket
+- **Related to**: Associate related tickets
+- **Parent/Child**: Create hierarchical relationships
+
+### Link to Knowledge Base
+
+Convert solved tickets into knowledge base articles:
+
+<Steps>
+  <Step title="Open Solved Ticket">
+    Navigate to a ticket with an approved solution.
+  </Step>
+
+  <Step title="Create KB Article">
+    Click **Convert to Knowledge Base** to create an article from the solution.
+  </Step>
+
+  <Step title="Configure Visibility">
+    Set who can view the article (users, groups, profiles, entities).
+  </Step>
+</Steps>
+
+## Ticket Statistics
+
+View ticket metrics and performance data:
+
+- **Statistics** tab shows resolution time, response time, and other KPIs
+- **Processing ticket** tab displays the complete timeline
+- **Costs** tab tracks time and material costs associated with the ticket
+
+## Advanced Features
+
+### Recurring Tickets
+
+Create tickets that automatically generate on a schedule:
+
+1. Navigate to **Assistance** > **Recurrent tickets**
+2. Define the template and schedule
+3. Set start and end dates for recurrence
+
+### Ticket Templates
+
+Use templates to standardize ticket creation:
+
+- **Predefined fields**: Auto-populate common values
+- **Mandatory fields**: Ensure required information is provided
+- **Hidden fields**: Simplify the form for specific categories
+
+### Email Integration
+
+Tickets can be created and updated via email:
+
+- Send emails to your configured helpdesk address
+- Replies to ticket notification emails update the ticket
+- Attachments are automatically added as documents
+
+<Warning>
+  Self-service users can only update tickets if they have no follow-ups or tasks, and the ticket is not solved or closed.
+</Warning>
+
+## Satisfaction Surveys
+
+After ticket closure, requesters may receive satisfaction surveys:
+
+- View survey results in the **Satisfaction** tab
+- Surveys expire based on entity configuration
+- Ratings help measure service quality
+
+## Best Practices
+
+<Tip>
+  **For Requesters:**
+  - Provide detailed descriptions including error messages and screenshots
+  - Check existing tickets to avoid duplicates
+  - Respond promptly to technician questions
+  - Test and approve solutions quickly
+</Tip>
+
+<Tip>
+  **For Technicians:**
+  - Take ticket ownership promptly to show accountability
+  - Add regular follow-ups to keep requesters informed
+  - Use private tasks for internal coordination
+  - Document solutions clearly for knowledge sharing
+  - Link related tickets and assets for better tracking
+</Tip>
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Alt+T` | Go to main ticket view |
+| `Shift+P` | Jump to processing tab |
+| `Alt+S` | Go to statistics tab |
+| `T` | Quick access to tickets (global shortcut) |
+
+## Troubleshooting
+
+**Cannot create a ticket**
+- Verify you have the appropriate permissions
+- Ensure required fields are filled in
+- Check entity access rights
+
+**Cannot update a ticket**
+- Self-service users cannot update tickets with existing follow-ups or tasks
+- Closed tickets require special permissions to reopen
+- Verify you have rights to the ticket's entity
+
+**SLA not appearing**
+- Ensure SLA rules are configured for your entity
+- Check that the ticket category and priority match SLA criteria
+- Verify the ticket type (incident/request) matches SLA conditions

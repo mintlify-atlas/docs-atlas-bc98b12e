@@ -1,0 +1,451 @@
+---
+title: PUT/PATCH Operations
+description: Update existing items in ITSM-NG using PUT or PATCH requests
+---
+
+The ITSM-NG REST API supports updating existing items using PUT or PATCH methods. Both methods function identically and can update single or multiple items.
+
+## Update Item(s)
+
+Update one or more existing items in ITSM-NG.
+
+### Endpoint
+
+```
+PUT /apirest.php/:itemtype/:id
+```
+
+or
+
+```
+PATCH /apirest.php/:itemtype/:id
+```
+
+### HTTP Methods
+
+Both `PUT` and `PATCH` are supported and behave identically for updates.
+
+### Headers
+
+<ParamField header="Session-Token" type="string" required>
+  Session token obtained from [initSession](/api/init-session)
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Optional authorization string from API configuration
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+### URL Parameters
+
+<ParamField path="id" type="integer">
+  The unique identifier of the item to update. Optional if provided in the request body.
+</ParamField>
+
+### Request Body
+
+<ParamField body="input" type="object | array" required>
+  For single item: an object with fields to update
+  
+  For multiple items: an array of objects, each containing an `id` field and the fields to update
+</ParamField>
+
+### Response
+
+<ResponseField name="id" type="boolean">
+  `true` if update succeeded, `false` if failed
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message or error description
+</ResponseField>
+
+Returns an array of objects with update status for each item.
+
+### Response Codes
+
+- `200 OK` - Item(s) updated successfully
+- `207 Multi-Status` - Bulk operation with some failures
+- `400 Bad Request` - Invalid input parameters
+- `401 Unauthorized` - Invalid or missing session token
+- `404 Not Found` - Item not found
+
+---
+
+## Update Single Item (URL ID)
+
+Update a single item by specifying the ID in the URL.
+
+### Example Request
+
+```bash
+curl -X PUT \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+-d '{"input": {"otherserial": "xcvbn"}}' \
+'http://path/to/glpi/apirest.php/Computer/10'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "10": true,
+    "message": ""
+  }
+]
+```
+
+---
+
+## Update Single Item (Body ID)
+
+Update a single item by specifying the ID in the request body.
+
+### Example Request
+
+```bash
+curl -X PUT \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+-d '{"input": {"id": 11, "otherserial": "abcde"}}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "11": true,
+    "message": ""
+  }
+]
+```
+
+<Note>
+  You can omit the ID from the URL and provide it in the `input` object instead. This is useful when updating multiple items or when building generic update functions.
+</Note>
+
+---
+
+## Update Multiple Items (Bulk)
+
+Update multiple items in a single request.
+
+### Example Request
+
+```bash
+curl -X PUT \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+-d '{"input": [
+  {"id": 16, "otherserial": "abcde"},
+  {"id": 17, "otherserial": "fghij"}
+]}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "16": true,
+    "message": ""
+  },
+  {
+    "17": false,
+    "message": "Item not found"
+  }
+]
+```
+
+<Warning>
+  Each object in the `input` array must include an `id` field to identify which item to update. Items without an `id` will fail.
+</Warning>
+
+---
+
+## Using PATCH Method
+
+The PATCH method works identically to PUT.
+
+### Example Request
+
+```bash
+curl -X PATCH \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+-d '{"input": {"id": 10, "comment": "Updated comment"}}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "10": true,
+    "message": ""
+  }
+]
+```
+
+---
+
+## Special Use Cases
+
+### Lost Password Request
+
+Request a password reset for a user account.
+
+#### Endpoint
+
+```
+PUT /apirest.php/lostPassword/
+```
+
+#### Requirements
+
+- GLPI must have notifications enabled
+- The email address must belong to an existing user
+
+#### Request Body
+
+<ParamField body="email" type="string" required>
+  Email address of the user requesting password reset
+</ParamField>
+
+#### Example Request
+
+```bash
+curl -X PUT \
+-H 'Content-Type: application/json' \
+-d '{"email": "user@domain.com"}' \
+'http://path/to/glpi/apirest.php/lostPassword'
+```
+
+#### Example Response
+
+```
+200 OK
+```
+
+### Password Reset
+
+Complete the password reset process using a reset token.
+
+#### Endpoint
+
+```
+PUT /apirest.php/lostPassword/
+```
+
+#### Request Body
+
+<ParamField body="email" type="string" required>
+  Email address of the user
+</ParamField>
+
+<ParamField body="password_forget_token" type="string" required>
+  Reset token received via email
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The new password
+</ParamField>
+
+#### Example Request
+
+```bash
+curl -X PUT \
+-H 'Content-Type: application/json' \
+-d '{
+  "email": "user@domain.com",
+  "password_forget_token": "b0a4cfe81448299ebed57442f4f21929c80ebee5",
+  "password": "NewPassword"
+}' \
+'http://path/to/glpi/apirest.php/lostPassword'
+```
+
+#### Example Response
+
+```
+200 OK
+```
+
+---
+
+## Common Update Fields
+
+### Standard Fields
+
+<ParamField body="name" type="string">
+  Update the item name
+</ParamField>
+
+<ParamField body="comment" type="string">
+  Update comments or description
+</ParamField>
+
+<ParamField body="entities_id" type="integer">
+  Move item to different entity
+</ParamField>
+
+<ParamField body="is_deleted" type="boolean">
+  Soft delete/restore the item (use DELETE endpoint for actual deletion)
+</ParamField>
+
+### Asset Fields
+
+<ParamField body="serial" type="string">
+  Update serial number
+</ParamField>
+
+<ParamField body="otherserial" type="string">
+  Update inventory number
+</ParamField>
+
+<ParamField body="contact" type="string">
+  Update contact person
+</ParamField>
+
+<ParamField body="locations_id" type="integer">
+  Update location
+</ParamField>
+
+<ParamField body="states_id" type="integer">
+  Update state (e.g., move to Production)
+</ParamField>
+
+<ParamField body="users_id_tech" type="integer">
+  Update technical manager
+</ParamField>
+
+### ITIL Fields
+
+<ParamField body="content" type="string">
+  Update ticket/problem/change content
+</ParamField>
+
+<ParamField body="status" type="integer">
+  Update status (e.g., close ticket)
+</ParamField>
+
+<ParamField body="priority" type="integer">
+  Update priority level (1-5)
+</ParamField>
+
+<ParamField body="urgency" type="integer">
+  Update urgency level (1-5)
+</ParamField>
+
+<ParamField body="impact" type="integer">
+  Update impact level (1-5)
+</ParamField>
+
+---
+
+## Partial vs. Full Updates
+
+The API supports partial updates - you only need to include fields you want to change.
+
+### Partial Update Example
+
+Update only the serial number:
+
+```json
+{
+  "input": {
+    "id": 10,
+    "serial": "NEW-SERIAL-123"
+  }
+}
+```
+
+All other fields remain unchanged.
+
+### Full Update Example
+
+Update multiple fields:
+
+```json
+{
+  "input": {
+    "id": 10,
+    "serial": "NEW-SERIAL-123",
+    "otherserial": "INV-456",
+    "locations_id": 5,
+    "states_id": 1,
+    "comment": "Updated via API"
+  }
+}
+```
+
+---
+
+## Error Handling
+
+### Common Errors
+
+<ResponseField name="ERROR_GLPI_UPDATE" type="error">
+  Unable to update the item. Check GLPI logs for details.
+</ResponseField>
+
+<ResponseField name="ERROR_GLPI_PARTIAL_UPDATE" type="error">
+  Some items in bulk operation failed. Check the response array for individual results.
+</ResponseField>
+
+<ResponseField name="ERROR_ITEM_NOT_FOUND" type="error">
+  The specified item ID does not exist.
+</ResponseField>
+
+<ResponseField name="ERROR_RIGHT_MISSING" type="error">
+  User lacks permission to update items of this type.
+</ResponseField>
+
+### Validation Errors
+
+Updates may fail due to:
+
+- **Invalid foreign keys**: Referenced IDs must exist
+- **Business rules**: Some fields have constraints (e.g., can't reopen closed tickets)
+- **Locked items**: Items locked by another process
+- **Permission issues**: User profile must have update rights
+
+---
+
+## Best Practices
+
+<Tip>
+  **ID Precedence**: When both URL ID and body ID are provided, the URL ID takes precedence. For consistency, choose one approach.
+</Tip>
+
+<Tip>
+  **Bulk Updates**: Use bulk updates instead of individual requests when updating multiple items to reduce API calls.
+</Tip>
+
+<Tip>
+  **Optimistic Locking**: Consider implementing optimistic locking by checking `date_mod` before updates to prevent overwriting concurrent changes.
+</Tip>
+
+<Warning>
+  **Session Write Mode**: Update operations require write access to the session. The API automatically enables write mode for PUT/PATCH operations.
+</Warning>
+
+<Note>
+  **Audit Trail**: All updates are logged in GLPI's history unless you explicitly disable it with the `history` parameter.
+</Note>
+
+<Info>
+  **Field Omission**: Fields not included in the `input` object are not modified. There's no need to send the complete object.
+</Info>

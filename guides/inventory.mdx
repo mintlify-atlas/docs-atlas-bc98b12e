@@ -1,0 +1,498 @@
+---
+title: Inventory System Usage
+description: How to use ITSM-NG's inventory features for automated asset discovery and management
+---
+
+# Inventory System Usage
+
+ITSM-NG's inventory system automates the discovery and tracking of IT assets across your infrastructure. This guide covers how to leverage inventory features for efficient asset management.
+
+## Understanding Inventory
+
+The inventory system automatically collects information about:
+
+- **Hardware**: Computers, network devices, peripherals
+- **Software**: Installed applications and versions
+- **Components**: Internal hardware (CPU, RAM, disks)
+- **Network**: IP addresses, MAC addresses, ports
+- **Operating Systems**: OS details and configurations
+
+## Inventory Methods
+
+ITSM-NG supports multiple inventory collection methods:
+
+### Agent-Based Inventory
+
+- **GLPI Agent**: Installed on endpoints
+- **Periodic reporting**: Automatic updates
+- **Comprehensive data**: Full system information
+
+### Network Discovery
+
+- **SNMP**: Query network devices
+- **IP scanning**: Discover new devices
+- **Passive monitoring**: Network traffic analysis
+
+### Manual Entry
+
+- **Direct input**: Manual asset creation
+- **Import**: CSV/Excel bulk imports
+- **API**: Programmatic updates
+
+## Setting Up Automatic Inventory
+
+### Installing the GLPI Agent
+
+<Steps>
+  <Step title="Download the Agent">
+    Obtain the GLPI Agent installer for your platform from the official repository.
+  </Step>
+
+  <Step title="Install on Endpoints">
+    Deploy the agent to computers, servers, and other devices.
+    
+    **Windows**: Run the MSI installer
+    
+    **Linux**: Use package manager (deb/rpm)
+    
+    **macOS**: Install the PKG package
+  </Step>
+
+  <Step title="Configure Agent Settings">
+    Point the agent to your ITSM-NG server:
+    ```bash
+    # Example configuration
+    server = https://your-itsm-ng-server.com/plugins/fusioninventory/
+    delaytime = 3600
+    ```
+  </Step>
+
+  <Step title="Set Inventory Schedule">
+    Configure how often the agent reports (hourly, daily, etc.).
+  </Step>
+</Steps>
+
+<Note>
+  Agent deployment can be automated using GPO (Windows), Puppet, Ansible, or other configuration management tools.
+</Note>
+
+## Inventory Import Process
+
+### How Inventory Data is Processed
+
+<Steps>
+  <Step title="Data Collection">
+    Agent gathers system information from the endpoint.
+  </Step>
+
+  <Step title="Transmission">
+    Agent sends inventory data to ITSM-NG server (XML format).
+  </Step>
+
+  <Step title="Rule Processing">
+    ITSM-NG applies import rules to:
+    - Identify existing assets vs. new ones
+    - Assign entity and location
+    - Set initial status and type
+    - Link to users or groups
+  </Step>
+
+  <Step title="Database Update">
+    Asset records are created or updated in the database.
+  </Step>
+
+  <Step title="Notification">
+    Optional alerts sent for new assets or changes.
+  </Step>
+</Steps>
+
+## Import Rules
+
+Rules determine how inventory data becomes asset records.
+
+### Computer Import Rules
+
+<Steps>
+  <Step title="Access Rules">
+    Go to **Administration** > **Rules** > **Rules for import and link computers**.
+  </Step>
+
+  <Step title="Define Criteria">
+    Set conditions to match inventory data:
+    - **Serial number** matches existing asset
+    - **UUID** is unique identifier
+    - **MAC address** for network matching
+    - **Hostname** pattern recognition
+  </Step>
+
+  <Step title="Set Actions">
+    Configure what happens when criteria match:
+    - **Assign entity**: Place in specific entity
+    - **Link to computer**: Update existing record
+    - **Create new**: Add as new asset
+    - **Ignore**: Skip this inventory
+  </Step>
+
+  <Step title="Order Rules">
+    Rules are processed in order. Drag to reorder priority.
+  </Step>
+</Steps>
+
+<Warning>
+  Incorrect import rules can create duplicate assets. Test rules carefully before full deployment.
+</Warning>
+
+### Common Rule Examples
+
+**Rule: Match by Serial Number**
+```
+Criteria: Serial number is already present in ITSM-NG
+Action: Update existing computer
+```
+
+**Rule: Match by UUID**
+```
+Criteria: UUID is already present in ITSM-NG
+Action: Update existing computer
+```
+
+**Rule: Assign to Entity by Hostname**
+```
+Criteria: Hostname starts with "NYC-"
+Action: Assign to entity "New York Office"
+```
+
+**Rule: Set Status for Laptops**
+```
+Criteria: Computer type equals "Laptop"
+Action: Set status to "In use"
+```
+
+## Monitoring Inventory Activity
+
+### Viewing Recent Inventories
+
+<Steps>
+  <Step title="Access Administration">
+    Navigate to **Administration** > **Automatic inventory**.
+  </Step>
+
+  <Step title="View Activity">
+    See recent inventory submissions:
+    - **Device name**: Computer or device
+    - **Date**: When inventory was received
+    - **Status**: Success, error, or ignored
+    - **Action**: What was performed (created, updated)
+  </Step>
+
+  <Step title="Review Details">
+    Click on an entry to see full inventory data and processing results.
+  </Step>
+</Steps>
+
+### Troubleshooting Failed Inventories
+
+When inventories fail:
+
+1. **Check error message**: View specific failure reason
+2. **Review import rules**: Ensure rules are configured correctly
+3. **Verify permissions**: Check entity rights for import
+4. **Validate data**: Ensure inventory data is well-formed
+
+## Lock Management
+
+### Understanding Locks
+
+Locked fields prevent automatic inventory from overwriting manual changes.
+
+<Steps>
+  <Step title="Access Lock Tab">
+    Open any auto-inventoried asset and go to **Locks** tab.
+  </Step>
+
+  <Step title="Lock Fields">
+    Check boxes for fields to protect from auto-update:
+    - Serial number
+    - Location
+    - User
+    - Any other field
+  </Step>
+
+  <Step title="Save Locks">
+    Click **Update** to apply lock configuration.
+  </Step>
+</Steps>
+
+<Tip>
+  Lock fields when you need to maintain manual overrides that differ from auto-discovered values.
+</Tip>
+
+## Software Inventory
+
+### Managing Discovered Software
+
+Automatic inventory detects installed applications:
+
+<Steps>
+  <Step title="View Software List">
+    Go to **Assets** > **Software** to see all discovered applications.
+  </Step>
+
+  <Step title="Consolidate Versions">
+    Multiple versions of the same software appear as separate entries. Merge if needed:
+    - Select versions to merge
+    - Use **Merge** action
+    - Choose canonical name
+  </Step>
+
+  <Step title="Link Licenses">
+    Associate software installations with purchased licenses:
+    - Open software record
+    - Go to **Licenses** tab
+    - Add or link licenses
+  </Step>
+</Steps>
+
+### Software Dictionary
+
+Automate software naming and categorization:
+
+<Steps>
+  <Step title="Access Dictionary">
+    Navigate to **Administration** > **Dictionaries** > **Software**.
+  </Step>
+
+  <Step title="Create Rules">
+    Define how to rename or categorize software:
+    - **Criteria**: Software name contains "Adobe Reader"
+    - **Action**: Rename to "Adobe Acrobat Reader DC"
+    - **Category**: Assign to "PDF Readers" category
+  </Step>
+
+  <Step title="Apply Rules">
+    Rules automatically process new inventory data.
+  </Step>
+</Steps>
+
+## Component Tracking
+
+### Hardware Components
+
+Automatic inventory tracks internal components:
+
+- **Processors**: CPU model, cores, speed
+- **Memory**: RAM size, type, slots
+- **Storage**: Disks, partitions, capacity
+- **Network**: Network adapters, MAC addresses
+- **Graphics**: GPU model and memory
+
+### Component History
+
+ITSM-NG maintains component change history:
+
+1. **Component added**: New hardware installed
+2. **Component removed**: Hardware removed
+3. **Component changed**: Specifications modified
+
+<Note>
+  Component history helps track hardware upgrades and troubleshoot issues.
+</Note>
+
+## Network Inventory
+
+### Discovering Network Devices
+
+<Steps>
+  <Step title="Configure Network Discovery">
+    Set up SNMP credentials and IP ranges to scan.
+  </Step>
+
+  <Step title="Run Discovery">
+    Execute network scan to find devices:
+    - Switches
+    - Routers
+    - Printers
+    - Access points
+    - Other SNMP-enabled devices
+  </Step>
+
+  <Step title="Import Devices">
+    Review discovered devices and import into ITSM-NG.
+  </Step>
+</Steps>
+
+### Network Port Tracking
+
+Automatic inventory maps network connections:
+
+- **Physical ports**: Network interfaces
+- **IP addresses**: IPv4 and IPv6
+- **MAC addresses**: Hardware addresses
+- **VLANs**: Virtual network assignments
+- **Switch ports**: Connected switch and port number
+
+## Inventory Configuration
+
+### Entity Assignment
+
+Control where inventory creates assets:
+
+- **Default entity**: Fallback when rules don't match
+- **Rule-based assignment**: Use import rules
+- **Agent configuration**: Set entity in agent config
+
+### Status and State
+
+Define default values for new assets:
+
+- **Initial status**: "In use", "In stock", etc.
+- **Auto-update status**: Keep status from inventory
+- **Lock status**: Prevent status changes
+
+### Notification Settings
+
+<Steps>
+  <Step title="Configure Alerts">
+    Go to **Setup** > **Notifications** > **Notifications**.
+  </Step>
+
+  <Step title="Enable Inventory Notifications">
+    Activate alerts for:
+    - New computer in inventory
+    - Component changes
+    - Software changes
+    - License compliance issues
+  </Step>
+
+  <Step title="Set Recipients">
+    Define who receives notifications (users, groups, profiles).
+  </Step>
+</Steps>
+
+## Inventory Reports
+
+### Standard Reports
+
+Generate reports on inventory data:
+
+- **Assets by type**: Count of computers, monitors, etc.
+- **Software deployment**: Installation statistics
+- **Component inventory**: Hardware breakdown
+- **Network inventory**: IP and MAC address lists
+- **Inventory status**: Last inventory date per asset
+
+### Custom Reports
+
+Create tailored reports:
+
+<Steps>
+  <Step title="Use Search">
+    Navigate to asset type and click **Search**.
+  </Step>
+
+  <Step title="Add Criteria">
+    Filter by:
+    - Last inventory date
+    - Operating system
+    - Software installed
+    - Component specifications
+  </Step>
+
+  <Step title="Export Results">
+    Export to CSV, PDF, or other formats.
+  </Step>
+</Steps>
+
+## Manual Inventory Operations
+
+### Forcing Inventory Update
+
+Trigger immediate inventory from agent:
+
+**On the endpoint:**
+```bash
+# Windows
+glpi-agent --server=https://your-server.com/plugins/fusioninventory/
+
+# Linux
+glpi-agent --force
+
+# macOS
+sudo /usr/local/bin/glpi-agent --force
+```
+
+### Importing CSV Data
+
+<Steps>
+  <Step title="Prepare CSV File">
+    Create CSV with required columns (name, serial, type, etc.).
+  </Step>
+
+  <Step title="Access Import">
+    Go to **Tools** > **CSV Import**.
+  </Step>
+
+  <Step title="Map Fields">
+    Match CSV columns to ITSM-NG fields.
+  </Step>
+
+  <Step title="Preview and Import">
+    Review mapping and execute import.
+  </Step>
+</Steps>
+
+## Best Practices
+
+<Tip>
+  **Agent Deployment:**
+  - Deploy agents to all managed devices
+  - Set appropriate inventory frequency (daily recommended)
+  - Use secure communication (HTTPS)
+  - Keep agents updated to latest version
+</Tip>
+
+<Tip>
+  **Import Rules:**
+  - Test rules on sample data before production
+  - Use serial numbers as primary matching criteria
+  - Order rules from specific to general
+  - Document rule purposes and conditions
+</Tip>
+
+<Tip>
+  **Data Quality:**
+  - Review new inventory regularly
+  - Merge duplicate assets promptly
+  - Clean up software names with dictionary
+  - Lock manually corrected fields
+</Tip>
+
+<Warning>
+  Always backup your database before making bulk changes to import rules or inventory configurations.
+</Warning>
+
+## Troubleshooting
+
+**Inventory not appearing**
+- Check agent configuration and server URL
+- Verify network connectivity from endpoint to server
+- Review server logs for import errors
+- Ensure import rules allow the inventory
+
+**Duplicate assets created**
+- Review import rules matching criteria
+- Check if serial numbers are being collected
+- Verify UUID is unique and present
+- Use manual merge to consolidate duplicates
+
+**Components not updating**
+- Check if component fields are locked
+- Verify agent is collecting component data
+- Review import rules for component restrictions
+- Ensure auto-update is enabled for components
+
+**Software not appearing**
+- Verify agent is scanning software
+- Check software dictionary rules
+- Ensure software inventory is enabled in agent config
+- Review entity rights for software creation

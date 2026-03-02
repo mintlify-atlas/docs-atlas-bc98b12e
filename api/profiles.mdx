@@ -1,0 +1,194 @@
+---
+title: Profiles
+description: Get and change user profiles in ITSM-NG
+---
+
+Manage user profiles for the current session.
+
+## Get My Profiles
+
+Retrieve all profiles associated with the logged-in user.
+
+### Endpoint
+
+```
+GET /apirest.php/getMyProfiles/
+```
+
+### Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+<ParamField header="Session-Token" type="string" required>
+  Session token provided by the `initSession` endpoint
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Authorization string provided by the GLPI API configuration
+</ParamField>
+
+### Response
+
+<ResponseField name="myprofiles" type="array" required>
+  Array of all user profiles
+  
+  <expandable title="profile object">
+    <ResponseField name="id" type="integer">
+      Profile ID
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Profile name
+    </ResponseField>
+    
+    <ResponseField name="entities" type="array">
+      Entities associated with this profile
+    </ResponseField>
+  </expandable>
+</ResponseField>
+
+### Example
+
+```bash
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  'http://path/to/glpi/apirest.php/getMyProfiles'
+```
+
+**Response:**
+
+```json
+{
+  "myprofiles": [
+    {
+      "id": 1,
+      "name": "Super-admin",
+      "entities": []
+    }
+  ]
+}
+```
+
+---
+
+## Get Active Profile
+
+Retrieve the current active profile.
+
+### Endpoint
+
+```
+GET /apirest.php/getActiveProfile/
+```
+
+### Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+<ParamField header="Session-Token" type="string" required>
+  Session token provided by the `initSession` endpoint
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Authorization string provided by the GLPI API configuration
+</ParamField>
+
+### Response
+
+<ResponseField name="name" type="string" required>
+  Profile name
+</ResponseField>
+
+<ResponseField name="entities" type="array">
+  Entities associated with the active profile
+</ResponseField>
+
+### Example
+
+```bash
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  'http://path/to/glpi/apirest.php/getActiveProfile'
+```
+
+**Response:**
+
+```json
+{
+  "name": "Super-admin",
+  "entities": []
+}
+```
+
+---
+
+## Change Active Profile
+
+Change the active profile to a different one.
+
+### Endpoint
+
+```
+POST /apirest.php/changeActiveProfile/
+```
+
+### Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+<ParamField header="Session-Token" type="string" required>
+  Session token provided by the `initSession` endpoint
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Authorization string provided by the GLPI API configuration
+</ParamField>
+
+### JSON Payload
+
+<ParamField body="profiles_id" type="integer" required>
+  ID of the new active profile. Use `getMyProfiles` to get available profile IDs.
+</ParamField>
+
+### Response
+
+Returns an empty response body on success.
+
+### Example
+
+```bash
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  -d '{"profiles_id": 4}' \
+  'http://path/to/glpi/apirest.php/changeActiveProfile'
+```
+
+**Response:**
+
+```
+200 OK
+```
+
+### Status Codes
+
+- `200 OK` - Profile changed successfully
+- `400 Bad Request` - Error in input parameters
+- `404 Not Found` - Profile does not exist or is not usable by the current user
+
+### Notes
+
+- This endpoint has write access to the session
+- Only profiles returned by `getMyProfiles` can be set as active
+- Changing the active profile affects permissions for subsequent API calls

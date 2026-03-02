@@ -1,0 +1,570 @@
+---
+title: Knowledge Base Functionality
+description: Learn how to create, manage, and use the knowledge base for self-service support in ITSM-NG
+---
+
+# Knowledge Base Functionality
+
+The Knowledge Base in ITSM-NG is a powerful self-service tool that helps users find solutions independently while reducing repetitive support requests. This guide covers creating, managing, and using KB articles effectively.
+
+## Understanding the Knowledge Base
+
+The Knowledge Base (KB) serves multiple purposes:
+
+- **Self-service support**: Users find answers without creating tickets
+- **FAQ repository**: Publicly accessible frequently asked questions
+- **Internal documentation**: Private knowledge for technicians
+- **Solution library**: Reusable solutions from resolved tickets
+- **Training resource**: Onboarding and reference materials
+
+### Knowledge Base vs FAQ
+
+- **Knowledge Base**: Internal and external articles, broader scope
+- **FAQ**: Public-facing subset marked as frequently asked questions
+- All FAQ items are KB articles, but not all KB articles are FAQ items
+
+## Creating Knowledge Base Articles
+
+### Article Creation Process
+
+<Steps>
+  <Step title="Access KB Management">
+    Navigate to **Tools** > **Knowledge base** or press `B`.
+  </Step>
+
+  <Step title="Create New Article">
+    Click the **+** button to open the article creation form.
+  </Step>
+
+  <Step title="Enter Article Details">
+    Fill in the essential fields:
+    
+    - **Subject**: Clear, descriptive title (appears in search results)
+    - **Content**: Detailed solution or information (supports rich text)
+    - **Category**: Organize by topic
+    - **Visible since/until**: Control publication dates
+    - **FAQ**: Check if this should be in public FAQ
+  </Step>
+
+  <Step title="Configure Visibility">
+    Choose who can access the article:
+    - **Entity**: Specific organization or entity
+    - **Profile**: By user role (Admin, Technician, etc.)
+    - **Group**: Specific department or team
+    - **User**: Individual users
+    - **Child entities**: Include sub-organizations
+  </Step>
+
+  <Step title="Save and Publish">
+    Click **Add** to create the article. It becomes visible based on your visibility settings.
+  </Step>
+</Steps>
+
+<Note>
+  Articles without visibility settings remain unpublished and only visible to administrators and the author.
+</Note>
+
+### Article Content Best Practices
+
+<Tip>
+  **Writing Effective Articles:**
+  
+  - **Clear titles**: Use descriptive, searchable titles
+  - **Step-by-step**: Break complex procedures into numbered steps
+  - **Screenshots**: Include annotated images for visual clarity
+  - **Keywords**: Use terms users would search for
+  - **Complete solutions**: Include all necessary information
+  - **Test procedures**: Verify steps work before publishing
+</Tip>
+
+### Using Rich Text Editor
+
+The content editor supports:
+
+- **Formatting**: Bold, italic, underline, headings
+- **Lists**: Bulleted and numbered lists
+- **Links**: Hyperlinks to related resources
+- **Images**: Embedded screenshots and diagrams
+- **Tables**: Structured data presentation
+- **Code blocks**: Technical commands and scripts
+
+## Managing Article Visibility
+
+### Visibility Levels
+
+Control article access precisely:
+
+#### By Entity
+<Steps>
+  <Step title="Select Entity Type">
+    In the visibility section, choose **Type** = "Entity".
+  </Step>
+
+  <Step title="Choose Entity">
+    Select the specific entity from the dropdown.
+  </Step>
+
+  <Step title="Set Recursion">
+    Check **Child entities** to include all sub-entities.
+  </Step>
+</Steps>
+
+#### By Profile
+<Steps>
+  <Step title="Select Profile Type">
+    Choose **Type** = "Profile".
+  </Step>
+
+  <Step title="Choose Profile">
+    Select user role (e.g., "Technician", "Self-Service").
+  </Step>
+
+  <Step title="Set Entity Scope">
+    Choose which entity this visibility applies to.
+  </Step>
+</Steps>
+
+#### By Group
+<Steps>
+  <Step title="Select Group Type">
+    Choose **Type** = "Group".
+  </Step>
+
+  <Step title="Choose Group">
+    Select the specific group or department.
+  </Step>
+
+  <Step title="Set Entity Scope">
+    Define entity applicability.
+  </Step>
+</Steps>
+
+<Warning>
+  Articles without any visibility targets remain unpublished. Always set at least one visibility target.
+</Warning>
+
+## Article Categories
+
+### Creating Categories
+
+<Steps>
+  <Step title="Access Categories">
+    Go to **Setup** > **Dropdowns** > **Knowledge base**.
+  </Step>
+
+  <Step title="Add Category">
+    Click **Add** to create a new category.
+  </Step>
+
+  <Step title="Configure Category">
+    - **Name**: Category title
+    - **Parent category**: For hierarchical organization
+    - **Comments**: Description of category purpose
+  </Step>
+</Steps>
+
+### Category Organization
+
+Organize categories hierarchically:
+
+```
+IT Support
+├── Hardware
+│   ├── Computers
+│   ├── Printers
+│   └── Phones
+├── Software
+│   ├── Email
+│   ├── Office Applications
+│   └── Business Applications
+└── Network
+    ├── WiFi
+    ├── VPN
+    └── Remote Access
+```
+
+<Tip>
+  Well-organized categories make articles easier to find. Use clear, intuitive category names.
+</Tip>
+
+## Searching the Knowledge Base
+
+### Search Features
+
+<Steps>
+  <Step title="Access Search">
+    Navigate to Knowledge base and use the search box.
+  </Step>
+
+  <Step title="Enter Keywords">
+    Type search terms. The system searches:
+    - Article titles
+    - Article content
+    - Translated versions (if available)
+  </Step>
+
+  <Step title="Review Results">
+    Results are ranked by relevance. Click to view full articles.
+  </Step>
+</Steps>
+
+### Browse by Category
+
+Alternatively, browse organized categories:
+
+1. Click **Browse** on the KB page
+2. Select a category from the dropdown
+3. View all articles in that category
+4. Navigate subcategories as needed
+
+### Recent and Popular Articles
+
+The KB displays:
+
+- **Recent articles**: Newly added or updated
+- **Popular articles**: Most viewed articles
+- **Top rated**: Highest user ratings
+
+## Article Translations
+
+### Multi-Language Support
+
+<Steps>
+  <Step title="Open Article">
+    Navigate to the article you want to translate.
+  </Step>
+
+  <Step title="Go to Translations Tab">
+    Click the **Translations** tab.
+  </Step>
+
+  <Step title="Add Translation">
+    - Select **Language**
+    - Translate **Subject**
+    - Translate **Content**
+    - Click **Add**
+  </Step>
+</Steps>
+
+<Note>
+  Users automatically see articles in their preferred language when translations exist.
+</Note>
+
+## Comments and Feedback
+
+### Enabling Comments
+
+Users with comment rights can:
+
+- Add comments to articles
+- Ask clarifying questions
+- Suggest improvements
+- Share additional tips
+
+### Managing Comments
+
+<Steps>
+  <Step title="View Comments">
+    Open article and click **Comments** tab.
+  </Step>
+
+  <Step title="Review and Respond">
+    Read user comments and provide responses.
+  </Step>
+
+  <Step title="Moderate if Needed">
+    Edit or delete inappropriate comments.
+  </Step>
+</Steps>
+
+## Article Revisions
+
+### Version Control
+
+ITSM-NG maintains article revision history:
+
+<Steps>
+  <Step title="View Revisions">
+    Open article and go to **Revisions** tab.
+  </Step>
+
+  <Step title="Review Changes">
+    See:
+    - Date and time of change
+    - User who made the change
+    - Previous version content
+  </Step>
+
+  <Step title="Restore if Needed">
+    Revert to a previous version if recent changes were incorrect.
+  </Step>
+</Steps>
+
+<Tip>
+  Review revisions to track how articles evolve and restore accidentally deleted content.
+</Tip>
+
+## Converting Tickets to KB Articles
+
+### From Solved Tickets
+
+<Steps>
+  <Step title="Open Solved Ticket">
+    Navigate to a ticket with an approved solution.
+  </Step>
+
+  <Step title="Create KB Article">
+    Click **Convert to Knowledge Base** or similar option.
+  </Step>
+
+  <Step title="Review and Edit">
+    The system pre-fills:
+    - **Subject**: From ticket title
+    - **Content**: From solution text
+    - **Category**: From ticket category
+    
+    Edit as needed to generalize the solution.
+  </Step>
+
+  <Step title="Set Visibility">
+    Configure who can access this article.
+  </Step>
+
+  <Step title="Publish">
+    Save to make the article available.
+  </Step>
+</Steps>
+
+<Note>
+  The original ticket remains linked to the KB article for reference.
+</Note>
+
+## Linking KB Articles to Items
+
+### Associate with Assets
+
+Link articles to related hardware or software:
+
+<Steps>
+  <Step title="Open KB Article">
+    Navigate to the article.
+  </Step>
+
+  <Step title="Go to Items Tab">
+    Click **Items** to manage associations.
+  </Step>
+
+  <Step title="Add Link">
+    - Select **Item type** (Computer, Software, etc.)
+    - Choose specific **Item**
+    - Click **Add**
+  </Step>
+</Steps>
+
+**Benefits:**
+- Technicians see relevant articles when viewing assets
+- Users find asset-specific documentation
+- Knowledge is contextually available
+
+## Article Analytics
+
+### Tracking Article Usage
+
+Each article displays:
+
+- **View count**: Total number of views
+- **Author**: Who created the article
+- **Creation date**: When published
+- **Last update**: Most recent modification
+
+### Improving Low-Performing Articles
+
+Identify and improve articles with:
+
+- Low view counts (may need better titles/keywords)
+- High view but low ratings (content may need improvement)
+- Many views but still many tickets (solution may be incomplete)
+
+## Public FAQ Access
+
+### Configuring Public FAQ
+
+<Steps>
+  <Step title="Enable Public FAQ">
+    Go to **Setup** > **General** > **Assistance**.
+  </Step>
+
+  <Step title="Check Setting">
+    Enable **Use public FAQ**.
+  </Step>
+
+  <Step title="Mark Articles as FAQ">
+    Edit articles and check **Put this item in the FAQ**.
+  </Step>
+
+  <Step title="Set Public Visibility">
+    Ensure FAQ articles have **Entity** visibility with **Child entities** enabled for root entity.
+  </Step>
+</Steps>
+
+### Anonymous FAQ Access
+
+When enabled, users can:
+
+- Access FAQ without logging in
+- Search public articles
+- Browse FAQ categories
+- View article ratings
+
+<Warning>
+  Only mark articles as FAQ if they contain no sensitive or internal information.
+</Warning>
+
+## Article Management Tasks
+
+### Managing Your Articles
+
+<Steps>
+  <Step title="Access Management View">
+    In Knowledge base, use the manage form.
+  </Step>
+
+  <Step title="Filter Articles">
+    Choose:
+    - **My unpublished articles**: Drafts without visibility
+    - **All my articles**: Everything you created
+    - **All unpublished** (Admin): System-wide unpublished
+    - **All published** (Admin): All visible articles
+  </Step>
+
+  <Step title="Bulk Actions">
+    Select multiple articles for bulk operations:
+    - Delete
+    - Change category
+    - Update visibility
+    - Export
+  </Step>
+</Steps>
+
+### Article Maintenance Schedule
+
+<Tip>
+  **Regular KB Maintenance:**
+  - **Monthly**: Review most-viewed articles for accuracy
+  - **Quarterly**: Update screenshots and procedures
+  - **Yearly**: Archive outdated articles
+  - **Ongoing**: Create articles from recurring tickets
+</Tip>
+
+## Advanced Features
+
+### Article Templates
+
+Create consistent article structure:
+
+1. Design a standard template (e.g., Problem/Solution/Prevention)
+2. Use as copy-paste template for new articles
+3. Include standard sections and formatting
+
+**Example Template:**
+```
+## Problem Description
+[Describe the issue users encounter]
+
+## Symptoms
+- [List observable symptoms]
+- [Include error messages]
+
+## Solution
+1. [Step-by-step resolution]
+2. [Include screenshots]
+3. [Verify solution worked]
+
+## Prevention
+[How to avoid this issue in the future]
+
+## Related Articles
+[Links to related KB articles]
+```
+
+### Linking Related Articles
+
+Create article relationships:
+
+- Reference related articles in content
+- Use "See also" sections
+- Link prerequisite procedures
+- Connect troubleshooting paths
+
+## Best Practices
+
+<Tip>
+  **Content Quality:**
+  - Write for your audience (technical level appropriate)
+  - Use consistent terminology
+  - Include examples and use cases
+  - Keep articles focused on one topic
+  - Update regularly as systems change
+</Tip>
+
+<Tip>
+  **Organization:**
+  - Use clear, logical categories
+  - Standardize article titles (verb + noun pattern)
+  - Tag articles with keywords
+  - Link related articles
+  - Archive obsolete content rather than delete
+</Tip>
+
+<Tip>
+  **Promotion:**
+  - Reference KB articles in ticket solutions
+  - Train users on KB search
+  - Send KB highlights in newsletters
+  - Feature popular articles on helpdesk homepage
+  - Encourage user feedback and ratings
+</Tip>
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `B` | Access Knowledge base |
+
+## Troubleshooting
+
+**Article not appearing in search**
+- Check article visibility settings
+- Verify publication dates (visible since/until)
+- Ensure article is not marked as FAQ-only if searching KB
+- Check entity access
+
+**Cannot create articles**
+- Verify you have CREATE or PUBLISHFAQ rights
+- Check entity permissions
+- Ensure you're in the correct interface (central mode)
+
+**Users cannot see published articles**
+- Review visibility targets (entity, profile, group, user)
+- Check entity hierarchy and recursion settings
+- Verify users have FAQ or KB read permissions
+- Confirm article publication dates are current
+
+**Translations not appearing**
+- Check user language preference matches translation
+- Verify translation is complete (both subject and content)
+- Ensure translation feature is enabled
+
+## Measuring KB Success
+
+Track these metrics to evaluate KB effectiveness:
+
+- **Article views**: User engagement with content
+- **Search success rate**: Users finding relevant articles
+- **Ticket deflection**: Reduction in tickets on documented topics
+- **User ratings**: Content quality feedback
+- **Time to resolution**: Faster when KB used
+
+<Note>
+  A successful KB reduces ticket volume, improves user satisfaction, and empowers self-service support.
+</Note>

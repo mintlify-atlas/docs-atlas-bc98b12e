@@ -1,0 +1,675 @@
+---
+title: Authentication Methods
+description: Configure and manage multiple authentication methods in ITSM-NG including local, LDAP, and OIDC
+---
+
+## Overview
+
+ITSM-NG supports multiple authentication methods to integrate with your existing identity infrastructure. Each user can authenticate using one of several methods, and multiple methods can be active simultaneously.
+
+## Authentication Types
+
+### Supported Methods
+
+```php
+// From inc/auth.class.php:74-82
+class Auth extends CommonGLPI {
+    public const DB_GLPI  = 1;  // Local database
+    public const MAIL     = 2;  // Mail server (IMAP/POP)
+    public const LDAP     = 3;  // LDAP directory
+    public const EXTERNAL = 4;  // External SSO
+    public const CAS      = 5;  // CAS server
+    public const X509     = 6;  // X.509 certificates
+    public const API      = 7;  // API token
+    public const COOKIE   = 8;  // Remember me cookie
+}
+```
+
+### User Authentication Flow
+
+```php
+// From inc/auth.class.php:740-1077
+public function login($login_name, $login_password, $noauto, $remember_me, $login_auth) {
+    // 1. Try alternate auth (OIDC, CAS, External SSO)
+    if ($authtype = checkAlternateAuthSystems()) {
+        // Auto-redirect to external provider
+    }
+    
+    // 2. Try local database authentication
+    if ($this->connection_db($login_name, $login_password)) {
+        // Local auth successful
+    }
+    
+    // 3. Try LDAP authentication
+    if (Toolbox::canUseLdap()) {
+        AuthLDAP::tryLdapAuth($this, $login_name, $login_password);
+    }
+    
+    // 4. Try Mail server authentication
+    AuthMail::tryMailAuth($this, $login_name, $login_password);
+}
+```
+
+## Local Database Authentication
+
+### Overview
+
+Local authentication stores user credentials in ITSM-NG's database.
+
+### Password Storage
+
+```php
+// From inc/auth.class.php:352-356
+public static function getPasswordHash($pass) {
+    return password_hash($pass, PASSWORD_DEFAULT);
+}
+
+// Modern bcrypt/argon2 hashing with automatic salt
+```
+
+### Password Verification
+
+```php
+// From inc/auth.class.php:309-326
+public static function checkPassword($pass, $hash) {
+    // Supports multiple hash formats for backward compatibility:
+    // - Modern: password_verify() for bcrypt/argon2
+    // - Legacy: MD5 (32 chars)
+    // - Legacy: SHA1 (40 chars)
+    // - Legacy: Salted SHA1
+}
+```
+
+### Password Expiration
+
+Local accounts support password expiration:
+
+```php
+// From inc/auth.class.php:377-434
+$password_expiration_delay    // Days until password expires
+$password_expiration_lock_delay   // Additional days before account locks
+
+// Automatic account disable on expiration + lock delay
+if ($lock_date < current_time) {
+    $user->update(['is_active' => 0]);
+}
+```
+
+### Local User Creation
+
+<Accordion title="Via Web Interface">
+
+1. Navigate to **Administration** > **Users**
+2. Click **Add**
+3. Configure:
+   - Login name
+   - Password
+   - Authentication: "ITSM-NG internal database"
+4. Assign profiles and entities
+
+</Accordion>
+
+## LDAP Authentication
+
+### LDAP Configuration
+
+LDAP servers are configured in the LDAP directory table:
+
+```php
+// From inc/authldap.class.php:120-144
+'host'              // LDAP server hostname
+'port'              // Port (default: 389)
+'basedn'            // Base DN for searches
+'rootdn'            // Bind DN (optional)
+'rootdn_passwd'     // Bind password (encrypted)
+'login_field'       // Attribute containing username (e.g., 'uid', 'sAMAccountName')
+'sync_field'        // Unique sync field (e.g., 'objectGUID', 'entryUUID')
+'use_tls'           // Enable TLS encryption
+'condition'         // LDAP filter for user search
+```
+
+### Active Directory Preset
+
+```php
+// From inc/authldap.class.php:157-189
+'port' => 389
+'login_field' => 'samaccountname'
+'sync_field' => 'objectguid'
+'condition' => '(&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
+```
+
+### LDAP Connection Process
+
+```php
+// From inc/auth.class.php:237-297
+public function connection_ldap($ldap_method, $login, $password) {
+    // 1. Connect to LDAP server
+    $this->ldap_connection = AuthLDAP::tryToConnectToServer(
+        $ldap_method, $login, $password
+    );
+    
+    // 2. Search for user DN
+    $infos = AuthLDAP::searchUserDn($this->ldap_connection, [
+        'basedn' => $ldap_method['basedn'],
+        'login_field' => $ldap_method['login_field'],
+        'user_params' => ['value' => $login],
+        'condition' => $ldap_method['condition']
+    ]);
+    
+    // 3. Attempt bind with user credentials
+    if (@ldap_bind($this->ldap_connection, $dn, $password)) {
+        return $infos;  // Authentication successful
+    }
+}
+```
+
+### User Synchronization
+
+ITSM-NG can sync user data from LDAP:
+
+```php
+// From inc/authldap.class.php:1386-1418
+public static function getSyncFields($authtype_array) {
+    return [
+        'login_field' => 'name',
+        'email1_field' => 'email1',
+        'realname_field' => 'realname',
+        'firstname_field' => 'firstname',
+        'phone_field' => 'phone',
+        'mobile_field' => 'mobile',
+        'title_field' => 'usertitles_id',
+        'category_field' => 'usercategories_id',
+        'language_field' => 'language',
+        'registration_number_field' => 'registration_number',
+        'picture_field' => 'picture',
+        'responsible_field' => 'users_id_supervisor'
+    ];
+}
+```
+
+### LDAP Group Import
+
+Groups can be imported from LDAP:
+
+```php
+// From inc/authldap.class.php:787-820
+'group_field'           // User attribute with group membership
+'group_condition'       // LDAP filter for groups
+'group_search_type'     // Search in users, groups, or both
+'group_member_field'    // Group attribute listing members
+'use_dn'                // Use Distinguished Names in search
+```
+
+**Search Types**:
+```php
+public const GROUP_SEARCH_USER  = 0;  // Search in user objects
+public const GROUP_SEARCH_GROUP = 1;  // Search in group objects  
+public const GROUP_SEARCH_BOTH  = 2;  // Search both
+```
+
+### LDAP Replicates
+
+Configure failover LDAP servers for high availability:
+
+```php
+// Multiple LDAP servers in priority order
+Primary: ldap1.company.com:389
+Replicate 1: ldap2.company.com:389
+Replicate 2: ldap3.company.com:389
+```
+
+### LDAP Configuration Example
+
+<Accordion title="Active Directory Setup">
+
+```
+Name: Company Active Directory
+Server: ad.company.com
+Port: 389
+Base DN: DC=company,DC=com
+Connection Filter: (&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))
+Login Field: samaccountname
+Sync Field: objectguid
+Use TLS: Yes
+
+User Mapping:
+  Surname: sn
+  First Name: givenname  
+  Email: mail
+  Phone: telephonenumber
+  Mobile: mobile
+  Title: title
+```
+
+</Accordion>
+
+### Deleted LDAP Users
+
+Handle users removed from LDAP directory:
+
+```php
+// From inc/authldap.class.php:64-88
+public const DELETED_USER_PRESERVE = 0;  // Keep unchanged
+public const DELETED_USER_DELETE = 1;    // Move to trash
+public const DELETED_USER_WITHDRAWDYNINFO = 2;  // Remove dynamic info
+public const DELETED_USER_DISABLE = 3;   // Disable account
+public const DELETED_USER_DISABLEANDWITHDRAWDYNINFO = 4;  // Both
+```
+
+## OIDC Authentication (OpenID Connect)
+
+### Overview
+
+OIDC provides modern, token-based authentication with SSO capabilities.
+
+### OIDC Configuration
+
+```php
+// From inc/oidc.class.php:52-67
+'Provider'          // OIDC provider URL (e.g., https://auth.company.com)
+'ClientID'          // OAuth2 client ID
+'ClientSecret'      // OAuth2 client secret (encrypted)
+'scope'             // Requested scopes (comma-separated)
+'proxy'             // HTTP proxy (optional)
+'cert'              // SSL certificate path (optional)
+'sso_link_users'    // Link to existing local users?
+```
+
+### OIDC Flow
+
+```php
+// From inc/oidc.class.php:124-146
+1. User clicks "Login with SSO"
+2. Redirect to OIDC provider
+3. User authenticates at provider
+4. Provider redirects back with authorization code
+5. Exchange code for tokens
+6. Request user info from provider
+7. Create or link user account
+8. Establish session
+```
+
+### User Data Mapping
+
+```php
+// From inc/oidc.class.php:158-170
+// Custom field mapping via glpi_oidc_mapping table
+$mapping = [
+    'name' => 'preferred_username',  // Username field from OIDC
+    'email' => 'email',
+    'firstname' => 'given_name',
+    'realname' => 'family_name'
+];
+
+// Default to standard OIDC claims:
+'name' or 'sub'     // Username
+'email'             // Email address
+'given_name'        // First name
+'family_name'       // Last name
+```
+
+### User Creation and Linking
+
+```php
+// From inc/oidc.class.php:171-200
+// If user doesn't exist:
+if ($newUser && $auth_username) {
+    $user->add([
+        'name' => $auth_username,
+        '_extauth' => 1,  // Mark as external auth
+    ]);
+}
+
+// Link existing users if:
+// 1. sso_link_users is enabled, OR
+// 2. User's authtype is already EXTERNAL
+```
+
+### OIDC Redirect Handling
+
+```php
+// From inc/oidc.class.php:91-122
+// Preserve requested page through login:
+1. Store requested URL in cookie before redirect
+2. After authentication, redirect to original page
+3. Cookie expires after 5 minutes for security
+```
+
+### OIDC Provider Examples
+
+<Accordion title="Keycloak Configuration">
+
+```
+Provider: https://keycloak.company.com/auth/realms/master
+Client ID: itsm-ng
+Client Secret: ********************************
+Scope: openid, profile, email
+```
+
+</Accordion>
+
+<Accordion title="Azure AD Configuration">
+
+```
+Provider: https://login.microsoftonline.com/{tenant-id}/v2.0
+Client ID: {application-id}
+Client Secret: {client-secret}
+Scope: openid, profile, email
+```
+
+</Accordion>
+
+## Mail Server Authentication
+
+Authenticate against IMAP or POP3 mail servers:
+
+```php
+// From inc/auth.class.php:182-225
+public function connection_imap($host, $login, $pass) {
+    // Parse server string: {server:port/protocol/ssl}
+    $config = Toolbox::parseMailServerConnectString($host);
+    
+    // Connect and attempt login
+    $protocol->connect($config['address'], $config['port'], $ssl);
+    return $protocol->login($login, $pass);
+}
+```
+
+Mail authentication supports:
+- IMAP
+- POP3
+- SSL/TLS encryption
+- Certificate validation options
+
+## External SSO (Single Sign-On)
+
+### Server Variable Authentication
+
+Use HTTP server variables for SSO:
+
+```php
+// From inc/auth.class.php:540-573
+'ssovariables_id'   // Select server variable (REMOTE_USER, HTTP_AUTH_USER, etc.)
+
+// Common variables:
+$_SERVER['REMOTE_USER']         // Apache mod_auth
+$_SERVER['HTTP_AUTH_USER']      // Custom SSO headers
+$_SERVER['SSL_CLIENT_S_DN']     // X.509 certificates
+```
+
+### Domain Cleanup
+
+```php
+// From inc/auth.class.php:558-563
+'existing_auth_server_field_clean_domain' => true
+
+// Removes domain from username:
+'DOMAIN\username' → 'username'
+'username@domain' → 'username'
+```
+
+## CAS Authentication
+
+Central Authentication Service (CAS) support:
+
+```php
+// CAS configuration (global settings)
+'cas_host'      // CAS server hostname
+'cas_port'      // CAS server port
+'cas_uri'       // CAS URI path
+'cas_version'   // CAS protocol version (1.0, 2.0, 3.0)
+```
+
+## X.509 Certificate Authentication
+
+Authenticate using client SSL certificates:
+
+```php
+// From inc/auth.class.php:575-624
+'x509_email_field'  // Certificate field for email (CN, Email, etc.)
+'x509_ou_restrict'  // Restrict by Organizational Unit
+'x509_o_restrict'   // Restrict by Organization
+'x509_cn_restrict'  // Restrict by Common Name
+
+// Certificate subject parsing:
+// CN=john.doe/OU=IT/O=Company/C=US/Email=john@company.com
+```
+
+## API Token Authentication
+
+### User Tokens
+
+Each user can generate an API token:
+
+```php
+// From apirest.md:56-60
+// User Preference → Remote Access Key
+'api_token'  // Personal API token
+
+// Usage:
+Authorization: user_token {token}
+```
+
+### API Authentication
+
+```bash
+# From apirest.md:100-117
+# With user token:
+curl -X GET \
+  -H "Authorization: user_token q56hqkniwot8wntb3z1qarka5atf365taaa2uyjrn" \
+  'http://glpi/apirest.php/initSession'
+
+# With login/password:
+curl -X GET \
+  -H "Authorization: Basic base64(login:password)" \
+  'http://glpi/apirest.php/initSession'
+```
+
+## Authentication Priority
+
+When multiple methods are enabled:
+
+```php
+// From inc/auth.class.php:769-954
+1. Check for alternate auth (OIDC, CAS, External SSO)
+   → If configured, auto-redirect
+   
+2. Try local database if:
+   → No login_auth specified, OR
+   → login_auth = 'local'
+   
+3. Try LDAP if:
+   → LDAP enabled AND
+   → Not authenticated yet
+   
+4. Try Mail if:
+   → Mail auth enabled AND
+   → Not authenticated yet
+```
+
+## Remember Me Cookie
+
+Persistent login cookie support:
+
+```php
+// From inc/auth.class.php:637-662
+'login_remember_time'  // Cookie lifetime (seconds)
+
+// Cookie contains:
+[
+    user_id,
+    hashed_token
+]
+
+// Validated on each request
+if (Auth::checkPassword($cookie_token, $stored_hash)) {
+    // Auto-login user
+}
+```
+
+## Authentication Rules
+
+### Authorization Rules
+
+Automatic profile and entity assignment based on:
+- LDAP groups
+- Email domain  
+- User attributes
+
+```php
+// Rules processed after successful authentication
+$rules = new RuleRightCollection();
+$result = $rules->processAllRules(
+    $groups_id,
+    $user_data,
+    ['type' => Auth::LDAP, 'login' => $username, 'email' => $email]
+);
+```
+
+### Import Rules
+
+Control how users are imported from external sources:
+- Entity assignment
+- Recursive rights
+- Profile selection
+- Group membership
+
+## Multi-Source Authentication
+
+### User Account Structure
+
+```php
+// glpi_users table
+'authtype'  // Authentication method ID
+'auths_id'  // Specific auth source ID (e.g., LDAP server ID)
+'user_dn'   // LDAP Distinguished Name (if applicable)
+'sync_field' // Unique identifier for sync
+```
+
+### Source Priority
+
+Users are tied to their authentication source:
+
+```
+User: jdoe
+  └─ authtype: LDAP (3)
+     auths_id: 1 (Company AD)
+     
+User: admin
+  └─ authtype: DB_GLPI (1)
+     auths_id: 0 (local)
+```
+
+## Security Considerations
+
+### Password Policies
+
+For local authentication:
+- Minimum length enforcement
+- Complexity requirements
+- Expiration policies
+- Password history
+
+### Failed Login Protection
+
+```php
+// Logs all authentication attempts
+Event::log(0, "system", 3, "login", 
+    sprintf(__('Failed login for %1$s from IP %2$s'), $login, $ip)
+);
+```
+
+### Session Security
+
+- CSRF token validation
+- Session timeout
+- Secure cookie flags
+- IP-based session validation (optional)
+
+## Troubleshooting
+
+### Enable Debug Logging
+
+```php
+// In config/local_define.php
+define('GLPI_LOG_LVL', 4);  // Debug level
+
+// Check logs in:
+files/_log/php-errors.log
+files/_log/event.log
+```
+
+### Common Issues
+
+<Accordion title="LDAP Connection Failed">
+
+**Check:**
+- LDAP server reachable on specified port
+- Base DN is correct
+- Root DN has search permissions
+- TLS certificate if using encryption
+- Firewall rules allow LDAP traffic
+
+**Test:**
+Use "Test" button in LDAP configuration
+
+</Accordion>
+
+<Accordion title="OIDC Redirect Loop">
+
+**Check:**
+- Provider URL is correct and accessible
+- Client ID and secret match provider configuration  
+- Redirect URI is whitelisted in provider
+- Scopes are supported by provider
+
+**Debug:**
+Check browser console and network tab for errors
+
+</Accordion>
+
+<Accordion title="User Not Auto-Created">
+
+**Check:**
+- "User auto-add" is enabled (Setup > Authentication)
+- Authorization rules don't block creation
+- Username meets ITSM-NG requirements
+- External auth source is properly configured
+
+</Accordion>
+
+## Best Practices
+
+### Authentication Strategy
+
+1. **Use External Auth When Possible**: Centralize identity management
+2. **Keep Local Admin**: Maintain one local super-admin for emergencies
+3. **Test in Staging**: Verify auth changes before production
+4. **Document Configuration**: Keep records of auth server details
+
+### Security Recommendations
+
+1. **Enable TLS for LDAP**: Protect credentials in transit
+2. **Use Sync Fields**: Enable proper user deduplication (objectGUID, entryUUID)
+3. **Regular Password Rotation**: For service accounts (rootdn)
+4. **Monitor Auth Logs**: Watch for suspicious login patterns
+5. **Implement MFA**: Use OIDC providers with MFA support
+
+### User Lifecycle
+
+1. **Auto-Import**: Let users authenticate and auto-create
+2. **Sync Regularly**: Keep user data fresh from directory
+3. **Handle Deletions**: Configure deleted user strategy
+4. **Audit Accounts**: Regularly review user list and access
+
+<Warning>
+Changing authentication methods for existing users requires careful planning. Users may lose access if authentication sources change.
+</Warning>
+
+<Note>
+Multiple authentication methods can coexist. Users authenticate with their configured method automatically.
+</Note>
+
+<Info>
+API authentication is separate from web authentication but uses the same user database and rights system.
+</Info>

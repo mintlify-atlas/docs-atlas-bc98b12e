@@ -1,0 +1,352 @@
+---
+title: Installing Plugins
+description: Step-by-step guide to installing and managing ITSM-NG plugins
+---
+
+This guide covers the complete process of installing, configuring, activating, and managing plugins in ITSM-NG.
+
+## Prerequisites
+
+Before installing a plugin, ensure:
+
+- You have administrative access to ITSM-NG
+- The plugin is compatible with your ITSM-NG version
+- All required PHP extensions are installed
+- File system permissions are correctly set on the plugins directory
+
+## Installation Methods
+
+### Method 1: Manual Installation via Web Interface
+
+<Steps>
+  <Step title="Download the Plugin">
+    Download the plugin package (usually a `.tar.gz` or `.zip` file) from the official source or plugin marketplace.
+  </Step>
+
+  <Step title="Extract to Plugins Directory">
+    Extract the plugin archive to the ITSM-NG plugins directory:
+    
+    ```bash
+    cd /var/www/html/itsm-ng/plugins/
+    tar -xzf /path/to/plugin-name.tar.gz
+    ```
+    
+    Or for zip files:
+    
+    ```bash
+    cd /var/www/html/itsm-ng/plugins/
+    unzip /path/to/plugin-name.zip
+    ```
+  </Step>
+
+  <Step title="Set Permissions">
+    Ensure the web server has appropriate permissions:
+    
+    ```bash
+    chown -R www-data:www-data /var/www/html/itsm-ng/plugins/plugin-name
+    chmod -R 755 /var/www/html/itsm-ng/plugins/plugin-name
+    ```
+  </Step>
+
+  <Step title="Access Plugin Management">
+    1. Log in to ITSM-NG as an administrator
+    2. Navigate to **Setup > Plugins**
+    3. The new plugin should appear in the list with status "Not installed"
+  </Step>
+
+  <Step title="Install the Plugin">
+    1. Locate the plugin in the list
+    2. Click the **Install** button
+    3. Wait for the installation process to complete
+    4. Check for any installation messages or errors
+  </Step>
+
+  <Step title="Configure (if required)">
+    If the plugin requires configuration:
+    
+    1. The status will show "To be configured"
+    2. Click on the plugin name to access configuration
+    3. Complete the required settings
+    4. Save the configuration
+  </Step>
+
+  <Step title="Activate the Plugin">
+    1. Return to **Setup > Plugins**
+    2. Click the **Enable** button next to your plugin
+    3. The status should change to "Activated"
+  </Step>
+</Steps>
+
+Source: `inc/plugin.class.php:724-784`
+
+### Method 2: Command Line Installation
+
+For automated deployments or scripting:
+
+<Steps>
+  <Step title="Extract Plugin Files">
+    ```bash
+    cd /var/www/html/itsm-ng/plugins/
+    tar -xzf plugin-name.tar.gz
+    chown -R www-data:www-data plugin-name
+    ```
+  </Step>
+
+  <Step title="Run Discovery">
+    ITSM-NG automatically discovers plugins when the admin interface is accessed. Alternatively, trigger discovery programmatically through the Plugin API.
+  </Step>
+
+  <Step title="Install via Database">
+    You can also use ITSM-NG's CLI tools if available, or execute plugin installation through custom scripts using the Plugin class methods.
+  </Step>
+</Steps>
+
+## Plugin States
+
+Understanding plugin states helps troubleshoot installation issues:
+
+### Not Installed
+Plugin files are present but not installed in the database. Click **Install** to proceed.
+
+### To Be Configured
+Plugin is installed but requires configuration before activation. Access the plugin configuration page to complete setup.
+
+Source: `inc/plugin.class.php:530-560`
+
+### Not Activated
+Plugin is installed and configured but not currently active. Click **Enable** to activate.
+
+### Activated
+Plugin is fully operational and integrated into ITSM-NG.
+
+### Not Updated
+Plugin files are newer than the installed version. Click **Update** to migrate to the new version.
+
+Source: `inc/plugin.class.php:497-527`
+
+### To Be Cleaned
+Plugin directory is missing but database entries remain. Click **Clean** to remove database entries.
+
+Source: `inc/plugin.class.php:971-982`
+
+## Managing Plugins
+
+### Activating a Plugin
+
+<Steps>
+  <Step title="Navigate to Plugins">
+    Go to **Setup > Plugins** in the ITSM-NG interface.
+  </Step>
+
+  <Step title="Verify Prerequisites">
+    The system automatically checks:
+    - GLPI version compatibility
+    - PHP version requirements
+    - Required PHP extensions
+    - Dependent plugins
+    - Configuration status
+  </Step>
+
+  <Step title="Click Enable">
+    If all prerequisites are met, click the **Enable** button.
+  </Step>
+</Steps>
+
+Source: `inc/plugin.class.php:794-888`
+
+### Deactivating a Plugin
+
+<Steps>
+  <Step title="Access Plugin List">
+    Navigate to **Setup > Plugins**.
+  </Step>
+
+  <Step title="Disable Plugin">
+    Click the **Disable** button next to the active plugin.
+  </Step>
+
+  <Step title="Verify Deactivation">
+    - Plugin status changes to "Not Activated"
+    - Plugin features are no longer available
+    - Data remains in the database
+  </Step>
+</Steps>
+
+Source: `inc/plugin.class.php:898-930`
+
+### Updating a Plugin
+
+<Steps>
+  <Step title="Backup Your Data">
+    Always create a backup before updating:
+    
+    ```bash
+    mysqldump -u root -p itsm_ng > backup_before_plugin_update.sql
+    ```
+  </Step>
+
+  <Step title="Deactivate the Plugin">
+    Deactivate the plugin before updating files.
+  </Step>
+
+  <Step title="Replace Plugin Files">
+    ```bash
+    cd /var/www/html/itsm-ng/plugins/
+    rm -rf plugin-name
+    tar -xzf plugin-name-new-version.tar.gz
+    chown -R www-data:www-data plugin-name
+    ```
+  </Step>
+
+  <Step title="Check Plugin Status">
+    Return to **Setup > Plugins**. The status should show "Not Updated".
+  </Step>
+
+  <Step title="Run Update">
+    Click the **Update** button to execute database migrations and updates.
+  </Step>
+
+  <Step title="Reactivate Plugin">
+    Click **Enable** to activate the updated plugin.
+  </Step>
+</Steps>
+
+Source: `inc/plugin.class.php:497-527`
+
+### Uninstalling a Plugin
+
+<Warning>
+  Uninstalling a plugin removes all associated data from the database. This action cannot be undone.
+</Warning>
+
+<Steps>
+  <Step title="Deactivate First">
+    If the plugin is active, deactivate it first.
+  </Step>
+
+  <Step title="Backup Data">
+    Create a backup if you might need the plugin data later:
+    
+    ```bash
+    mysqldump -u root -p itsm_ng > backup_with_plugin_data.sql
+    ```
+  </Step>
+
+  <Step title="Uninstall via Interface">
+    1. Go to **Setup > Plugins**
+    2. Click the **Uninstall** button
+    3. Confirm the uninstallation
+  </Step>
+
+  <Step title="Remove Files (Optional)">
+    To completely remove the plugin:
+    
+    ```bash
+    rm -rf /var/www/html/itsm-ng/plugins/plugin-name
+    ```
+  </Step>
+</Steps>
+
+Source: `inc/plugin.class.php:670-711`
+
+## Troubleshooting
+
+### Plugin Not Appearing
+
+**Issue**: Plugin directory exists but doesn't show in the plugin list.
+
+**Solutions**:
+1. Check file permissions - web server must be able to read the plugin directory
+2. Verify `setup.php` exists and contains required functions
+3. Check for PHP syntax errors in plugin files
+4. Review web server error logs
+
+```bash
+# Check permissions
+ls -la /var/www/html/itsm-ng/plugins/
+
+# Check for errors
+tail -f /var/log/apache2/error.log
+```
+
+### Prerequisites Not Met
+
+**Issue**: Cannot activate plugin due to failed prerequisites.
+
+**Solutions**:
+1. Review the error message for specific requirements
+2. Install missing PHP extensions
+3. Update GLPI/ITSM-NG to required version
+4. Install dependent plugins first
+
+Source: `inc/plugin.class.php:815-835`
+
+### Plugin Causes Errors
+
+**Issue**: ITSM-NG shows errors after activating a plugin.
+
+**Solutions**:
+1. Deactivate the plugin immediately
+2. Check compatibility with your ITSM-NG version
+3. Review plugin and ITSM-NG logs
+4. Contact plugin developer for support
+
+```bash
+# Emergency plugin deactivation via database
+mysql -u root -p itsm_ng
+UPDATE glpi_plugins SET state = 4 WHERE directory = 'plugin-name';
+```
+
+### Configuration Required
+
+**Issue**: Plugin installed but stuck in "To be configured" state.
+
+**Solutions**:
+1. Click on the plugin name to access configuration
+2. Review documentation for required settings
+3. Complete all mandatory configuration fields
+4. Check `plugin_myplugin_check_config()` function requirements
+
+Source: `inc/plugin.class.php:531-560`
+
+### Update Fails
+
+**Issue**: Plugin update process fails or produces errors.
+
+**Solutions**:
+1. Restore from backup
+2. Check plugin changelog for breaking changes
+3. Review upgrade notes in plugin documentation
+4. Ensure database user has sufficient privileges
+5. Check for conflicts with other plugins
+
+## Plugin Directories
+
+ITSM-NG supports multiple plugin directories for flexibility:
+
+- **Default**: `/var/www/html/itsm-ng/plugins/`
+- **Custom locations** can be defined in configuration
+
+The system searches all configured directories when loading plugins.
+
+Source: `inc/plugin.class.php:233-259`
+
+## Security Considerations
+
+1. **Only install trusted plugins** - Plugins have full access to ITSM-NG
+2. **Verify plugin sources** - Download only from official repositories
+3. **Review code** - For critical systems, audit plugin code before installation
+4. **Keep plugins updated** - Security patches may be released
+5. **Test in staging** - Always test plugins in a non-production environment first
+
+## Performance Tips
+
+- **Limit active plugins** - Only activate plugins you actually use
+- **Monitor resource usage** - Some plugins can impact performance
+- **Regular maintenance** - Keep plugins updated for performance improvements
+- **Database optimization** - Run database maintenance after installing/removing plugins
+
+## Next Steps
+
+- [Plugin System Overview](/plugins/overview) - Understand plugin architecture
+- [Developing Custom Plugins](/plugins/development) - Create your own plugins

@@ -1,0 +1,331 @@
+---
+title: Ticket Resource
+description: Work with tickets through the ITSM-NG REST API
+---
+
+The Ticket resource represents ITSM tickets (incidents and requests) in ITSM-NG. You can create, retrieve, update, and delete tickets using the API.
+
+## Ticket Object
+
+A ticket in ITSM-NG contains the following key fields:
+
+<ResponseField name="id" type="integer">
+  Unique ticket identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Ticket title/subject
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  Ticket description content
+</ResponseField>
+
+<ResponseField name="status" type="integer">
+  Current ticket status:
+  - `1` - New
+  - `2` - Processing (assigned)
+  - `3` - Processing (planned)
+  - `4` - Pending
+  - `5` - Solved
+  - `6` - Closed
+</ResponseField>
+
+<ResponseField name="urgency" type="integer">
+  Urgency level (1-5, where 5 is highest)
+</ResponseField>
+
+<ResponseField name="impact" type="integer">
+  Impact level (1-5, where 5 is highest)
+</ResponseField>
+
+<ResponseField name="priority" type="integer">
+  Priority (automatically calculated from urgency × impact matrix)
+</ResponseField>
+
+<ResponseField name="type" type="integer">
+  Ticket type:
+  - `1` - Incident
+  - `2` - Request
+</ResponseField>
+
+<ResponseField name="entities_id" type="integer">
+  Entity ID to which the ticket belongs
+</ResponseField>
+
+<ResponseField name="users_id_recipient" type="integer">
+  Requester user ID
+</ResponseField>
+
+<ResponseField name="users_id_lastupdater" type="integer">
+  Last user who updated the ticket
+</ResponseField>
+
+<ResponseField name="date" type="datetime">
+  Ticket creation date
+</ResponseField>
+
+<ResponseField name="date_mod" type="datetime">
+  Last modification date
+</ResponseField>
+
+<ResponseField name="closedate" type="datetime">
+  Ticket close date
+</ResponseField>
+
+<ResponseField name="solvedate" type="datetime">
+  Ticket solve date
+</ResponseField>
+
+<ResponseField name="itilcategories_id" type="integer">
+  Ticket category ID
+</ResponseField>
+
+<ResponseField name="locations_id" type="integer">
+  Location ID associated with the ticket
+</ResponseField>
+
+## Get a Ticket
+
+Retrieve a specific ticket by ID.
+
+```bash cURL
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/Ticket/123'
+```
+
+### Query Parameters
+
+<ParamField query="expand_dropdowns" type="boolean" default="false">
+  Show dropdown names instead of IDs
+</ParamField>
+
+<ParamField query="with_logs" type="boolean" default="false">
+  Include ticket history
+</ParamField>
+
+<ParamField query="with_documents" type="boolean" default="false">
+  Include associated documents
+</ParamField>
+
+<ParamField query="with_contracts" type="boolean" default="false">
+  Include associated contracts
+</ParamField>
+
+### Response
+
+```json
+{
+  "id": 123,
+  "name": "Printer not working",
+  "content": "The office printer on floor 2 is not responding",
+  "status": 2,
+  "urgency": 3,
+  "impact": 3,
+  "priority": 3,
+  "type": 1,
+  "entities_id": 0,
+  "users_id_recipient": 5,
+  "date": "2024-03-02 10:30:00",
+  "date_mod": "2024-03-02 14:20:00",
+  "itilcategories_id": 12,
+  "locations_id": 4
+}
+```
+
+## Create a Ticket
+
+Create a new ticket in the system.
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  -d '{
+    "input": {
+      "name": "Printer not working",
+      "content": "The office printer on floor 2 is not responding",
+      "urgency": 3,
+      "impact": 3,
+      "type": 1,
+      "entities_id": 0
+    }
+  }' \
+  'https://your-instance.com/apirest.php/Ticket/'
+```
+
+### Request Body
+
+<ParamField body="input" type="object" required>
+  Ticket data object
+  
+  <Expandable title="properties">
+    <ParamField body="name" type="string" required>
+      Ticket title
+    </ParamField>
+    
+    <ParamField body="content" type="string" required>
+      Ticket description
+    </ParamField>
+    
+    <ParamField body="urgency" type="integer">
+      Urgency level (1-5)
+    </ParamField>
+    
+    <ParamField body="impact" type="integer">
+      Impact level (1-5)
+    </ParamField>
+    
+    <ParamField body="type" type="integer">
+      Ticket type (1=Incident, 2=Request)
+    </ParamField>
+    
+    <ParamField body="entities_id" type="integer">
+      Entity ID
+    </ParamField>
+    
+    <ParamField body="itilcategories_id" type="integer">
+      Category ID
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Response
+
+```json
+{
+  "id": 124,
+  "message": ""
+}
+```
+
+## Update a Ticket
+
+Update an existing ticket.
+
+```bash cURL
+curl -X PUT \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  -d '{
+    "input": {
+      "status": 5,
+      "solution": "Printer was offline. Reconnected and working now."
+    }
+  }' \
+  'https://your-instance.com/apirest.php/Ticket/123'
+```
+
+## Delete a Ticket
+
+Delete (or move to trash) a ticket.
+
+```bash cURL
+curl -X DELETE \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/Ticket/123?force_purge=false'
+```
+
+<ParamField query="force_purge" type="boolean" default="false">
+  If `true`, permanently delete the ticket. If `false`, move to trash.
+</ParamField>
+
+## Add a Followup
+
+Add a followup (comment) to a ticket.
+
+```bash cURL
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  -d '{
+    "input": {
+      "items_id": 123,
+      "itemtype": "Ticket",
+      "content": "Investigating the issue with the printer.",
+      "is_private": false
+    }
+  }' \
+  'https://your-instance.com/apirest.php/ITILFollowup/'
+```
+
+## Search Tickets
+
+Search for tickets using criteria.
+
+```bash cURL
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/search/Ticket/?criteria[0][field]=12&criteria[0][searchtype]=equals&criteria[0][value]=2&range=0-50'
+```
+
+This searches for tickets with status = 2 (Processing).
+
+<Note>
+  See the [Search endpoint](/api/search) documentation for detailed search syntax and options.
+</Note>
+
+## Common Use Cases
+
+<Accordion title="Get all open tickets">
+  ```bash
+  curl -X GET \
+    -H "Session-Token: your_session_token" \
+    'https://your-instance.com/apirest.php/search/Ticket/?criteria[0][field]=12&criteria[0][searchtype]=contains&criteria[0][value]=1,2,3,4'
+  ```
+  
+  This returns tickets with status 1-4 (New through Pending).
+</Accordion>
+
+<Accordion title="Get tickets assigned to a user">
+  ```bash
+  curl -X GET \
+    -H "Session-Token: your_session_token" \
+    'https://your-instance.com/apirest.php/search/Ticket/?criteria[0][field]=5&criteria[0][searchtype]=equals&criteria[0][value]=42'
+  ```
+  
+  This returns tickets assigned to user ID 42.
+</Accordion>
+
+<Accordion title="Create a ticket with a file attachment">
+  Use multipart/form-data to upload files with ticket creation:
+  
+  ```bash
+  curl -X POST \
+    -H "Session-Token: your_session_token" \
+    -H 'Content-Type: multipart/form-data' \
+    -F 'uploadManifest={"input": {"name": "Issue with screenshot", "content": "See attached", "_filename": ["screenshot.png"]}};type=application/json' \
+    -F 'filename[0]=@screenshot.png' \
+    'https://your-instance.com/apirest.php/Ticket/'
+  ```
+</Accordion>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Set Appropriate Priority" icon="exclamation-triangle">
+    Let the system calculate priority automatically based on urgency and impact values.
+  </Card>
+  
+  <Card title="Use Categories" icon="folder-tree">
+    Always assign tickets to appropriate categories for better organization and reporting.
+  </Card>
+  
+  <Card title="Track Status Changes" icon="clock-rotate-left">
+    Use the `with_logs` parameter to retrieve ticket history and track all status changes.
+  </Card>
+  
+  <Card title="Handle Pagination" icon="book-open">
+    When searching tickets, use the `range` parameter to paginate results (e.g., `range=0-49`).
+  </Card>
+</CardGroup>

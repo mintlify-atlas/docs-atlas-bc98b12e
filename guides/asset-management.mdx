@@ -1,0 +1,408 @@
+---
+title: Asset Management Guide
+description: Learn how to manage IT assets including computers, software, and hardware in ITSM-NG
+---
+
+# Asset Management Guide
+
+Effective asset management is crucial for IT operations. ITSM-NG provides comprehensive tools to track, manage, and maintain all your IT assets throughout their lifecycle.
+
+## Understanding Assets
+
+ITSM-NG manages various types of assets:
+
+- **Computers**: Desktops, laptops, and servers
+- **Network Equipment**: Switches, routers, access points
+- **Peripherals**: Monitors, printers, phones
+- **Software**: Applications and licenses
+- **Components**: Internal hardware (RAM, CPUs, hard drives)
+
+## Managing Computers
+
+### Adding a New Computer
+
+<Steps>
+  <Step title="Navigate to Assets">
+    Go to **Assets** > **Computers** in the main menu, or press the `O` keyboard shortcut.
+  </Step>
+
+  <Step title="Create New Computer">
+    Click the **+** button to open the computer creation form.
+  </Step>
+
+  <Step title="Enter Basic Information">
+    Fill in the General tab:
+    - **Name**: Computer hostname or identifier
+    - **Status**: Operational state (In use, In stock, etc.)
+    - **Location**: Physical location
+    - **Type**: Desktop, Laptop, Server, etc.
+    - **Manufacturer**: Computer brand
+    - **Model**: Specific model number
+  </Step>
+
+  <Step title="Add Identification Details">
+    - **Serial number**: Manufacturer's serial number
+    - **Inventory number**: Internal tracking number
+    - **UUID**: Universally unique identifier
+  </Step>
+
+  <Step title="Assign Users and Groups">
+    - **User**: Person using the computer
+    - **Group**: Department or team
+    - **Technician in charge**: IT staff responsible
+    - **Group in charge**: IT team responsible
+  </Step>
+
+  <Step title="Save the Asset">
+    Click **Add** to create the computer record.
+  </Step>
+</Steps>
+
+<Note>
+  For auto-discovered computers, most fields are populated automatically via inventory tools.
+</Note>
+
+### Computer Tabs Overview
+
+#### Operating Systems
+
+Track installed operating systems:
+
+- **Operating System**: Windows, Linux, macOS, etc.
+- **Version**: Specific version number
+- **Architecture**: 32-bit or 64-bit
+- **Service Pack**: Update level
+- **License**: OS license information
+
+#### Components
+
+Manage internal hardware components:
+
+- **Processors**: CPU model and count
+- **Memory**: RAM modules and capacity
+- **Storage**: Hard drives and SSDs
+- **Graphics Cards**: GPU information
+- **Network Cards**: Network adapters
+- **Sound Cards**: Audio hardware
+
+<Tip>
+  Components are automatically detected and updated by inventory agents, reducing manual data entry.
+</Tip>
+
+#### Volumes
+
+Track disk partitions and storage:
+
+- **Partition**: Name and mount point
+- **Total Size**: Disk capacity
+- **Free Space**: Available storage
+- **File System**: NTFS, ext4, APFS, etc.
+
+#### Software
+
+View all installed applications:
+
+- **Software name**: Application title
+- **Version**: Installed version
+- **Installation date**: When installed
+- **License**: Associated license if applicable
+
+### Connecting Items to Computers
+
+Link peripherals and components:
+
+<Steps>
+  <Step title="Open Computer Record">
+    Navigate to the computer you want to connect items to.
+  </Step>
+
+  <Step title="Go to Items Tab">
+    Click on the **Items** tab.
+  </Step>
+
+  <Step title="Add Connection">
+    - Select the **Item type** (Monitor, Printer, etc.)
+    - Choose the specific **Item** from the dropdown
+    - Click **Add**
+  </Step>
+</Steps>
+
+<Note>
+  Connected items can be either dedicated (one-to-one) or shared (one-to-many).
+</Note>
+
+## Network Configuration
+
+### Managing Network Ports
+
+Each computer can have multiple network interfaces:
+
+<Steps>
+  <Step title="Access Network Ports Tab">
+    Open the computer and click **Network ports**.
+  </Step>
+
+  <Step title="Add a Port">
+    - **Port type**: Ethernet, WiFi, etc.
+    - **Port name**: Interface name (eth0, wlan0)
+    - **MAC address**: Hardware address
+    - **IP address**: Assigned IP
+    - **Network**: Associated network segment
+  </Step>
+
+  <Step title="Configure VLAN">
+    If using VLANs, assign the appropriate VLAN ID and network.
+  </Step>
+</Steps>
+
+## Financial Management
+
+### Information Management (Infocom)
+
+Track financial details for each asset:
+
+- **Supplier**: Vendor who provided the asset
+- **Order number**: Purchase order reference
+- **Purchase date**: When acquired
+- **Delivery date**: When received
+- **Purchase value**: Original cost
+- **Warranty**: Duration and expiration
+- **Invoice number**: Billing reference
+
+<Steps>
+  <Step title="Access Financial Info">
+    Open any asset and click the **Management** tab.
+  </Step>
+
+  <Step title="Enter Financial Details">
+    Fill in purchase information, warranty, and cost details.
+  </Step>
+
+  <Step title="Set Depreciation">
+    Configure depreciation period and method for accounting purposes.
+  </Step>
+</Steps>
+
+### Tracking Asset Value
+
+ITSM-NG automatically calculates:
+
+- **Net book value**: Current depreciated value
+- **TCO (Total Cost of Ownership)**: Purchase + maintenance + ticket costs
+- **Monthly TCO**: Average monthly cost
+
+## Contracts and Agreements
+
+### Linking Contracts to Assets
+
+Associate maintenance and support contracts:
+
+<Steps>
+  <Step title="Create or Open Contract">
+    Go to **Management** > **Contracts**.
+  </Step>
+
+  <Step title="Add Assets to Contract">
+    In the **Items** tab, select asset type and specific items.
+  </Step>
+
+  <Step title="Set Contract Details">
+    - **Start date** and **End date**
+    - **Notice period**: Renewal notification
+    - **Contract type**: Maintenance, leasing, etc.
+    - **Supplier**: Service provider
+  </Step>
+</Steps>
+
+<Warning>
+  ITSM-NG can send alerts before contract expiration if notifications are configured.
+</Warning>
+
+## Documents and Knowledge
+
+### Attaching Documentation
+
+Store manuals, certificates, and guides with assets:
+
+1. Navigate to the **Documents** tab
+2. Click **Add a document**
+3. Upload file or link existing document
+4. Set document category and visibility
+
+### Linking Knowledge Base Articles
+
+Associate helpful articles with assets:
+
+- **Items** tab in KB articles
+- Link troubleshooting guides
+- Create asset-specific procedures
+
+## Bulk Operations
+
+### Mass Updates
+
+Update multiple assets simultaneously:
+
+<Steps>
+  <Step title="Select Assets">
+    In the asset list, check the boxes for items to update.
+  </Step>
+
+  <Step title="Choose Action">
+    Click **Actions** dropdown and select:
+    - **Update**: Modify field values
+    - **Add item**: Connect to another item
+    - **Move**: Change location or entity
+    - **Delete**: Remove from inventory
+  </Step>
+
+  <Step title="Configure Changes">
+    Select fields to update and enter new values.
+  </Step>
+
+  <Step title="Execute">
+    Click **Post** to apply changes to all selected items.
+  </Step>
+</Steps>
+
+## Auto-Update Features
+
+ITSM-NG can propagate changes from computers to connected items:
+
+**When enabled, changing a computer's:**
+- **Location** → Updates connected peripherals' location
+- **User** → Updates connected items' user
+- **Group** → Updates connected items' group
+- **Status** → Updates connected items' status
+- **Contact** → Updates connected items' contact
+
+<Tip>
+  Enable auto-update in **Setup** > **General** > **Assets** to reduce manual updates.
+</Tip>
+
+## Reservations
+
+Allow users to reserve available assets:
+
+<Steps>
+  <Step title="Enable Reservations">
+    In the asset record, go to **Reservations** tab and click **Make reservable**.
+  </Step>
+
+  <Step title="Create Reservation">
+    - Select **Start** and **End** dates
+    - Choose **User** making the reservation
+    - Add optional **Comments**
+  </Step>
+
+  <Step title="Manage Reservations">
+    View, edit, or cancel reservations in the **Reservations** tab.
+  </Step>
+</Steps>
+
+## Asset Lifecycle Management
+
+### Asset States
+
+Track assets through their lifecycle:
+
+1. **In stock**: Available but not deployed
+2. **In use**: Actively deployed
+3. **Under maintenance**: Being repaired
+4. **Retired**: End of life
+5. **Lost/Stolen**: Missing assets
+
+### Decommissioning Assets
+
+<Steps>
+  <Step title="Update Status">
+    Change asset status to **Retired** or **To be destroyed**.
+  </Step>
+
+  <Step title="Disconnect Items">
+    Remove connections to other assets if applicable.
+  </Step>
+
+  <Step title="Remove Licenses">
+    Unassign software licenses for reuse.
+  </Step>
+
+  <Step title="Archive or Delete">
+    Either move to trash or permanently purge the record.
+  </Step>
+</Steps>
+
+<Note>
+  Deleted items go to trash first and can be restored before permanent deletion.
+</Note>
+
+## Virtual Machines
+
+Track virtualization information:
+
+- **Virtualization type**: VMware, Hyper-V, etc.
+- **Host system**: Physical server
+- **Guest systems**: VMs running on this host
+- **Resource allocation**: CPU, RAM assigned
+
+## Anti-virus Information
+
+Monitor anti-virus status:
+
+- **Software**: Anti-virus product
+- **Version**: Current version
+- **Signature date**: Last virus definition update
+- **Expiration**: License expiration
+
+<Warning>
+  Outdated anti-virus definitions pose security risks. Monitor expiration dates closely.
+</Warning>
+
+## Best Practices
+
+<Tip>
+  **Regular Inventory Audits:**
+  - Schedule periodic inventory scans
+  - Reconcile physical assets with database records
+  - Update asset locations during office moves
+  - Verify user assignments quarterly
+</Tip>
+
+<Tip>
+  **Documentation:**
+  - Attach purchase receipts and warranties
+  - Store configuration backups
+  - Document custom configurations
+  - Link related knowledge base articles
+</Tip>
+
+<Tip>
+  **Lifecycle Management:**
+  - Set up contract renewal alerts
+  - Plan refresh cycles based on depreciation
+  - Track warranty expirations
+  - Properly decommission retired assets
+</Tip>
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `O` | Open computers list |
+
+## Troubleshooting
+
+**Asset not appearing in searches**
+- Check entity assignment and your entity access
+- Verify the asset is not deleted (check trash)
+- Ensure visibility permissions are correct
+
+**Cannot connect items**
+- Verify both items are in compatible entities
+- Check that the item isn't already connected elsewhere
+- Ensure you have update rights on both items
+
+**Auto-inventory not updating**
+- Verify inventory agent is running on the computer
+- Check network connectivity to ITSM-NG server
+- Review inventory rules and import configurations

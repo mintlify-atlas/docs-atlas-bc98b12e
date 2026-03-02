@@ -1,0 +1,449 @@
+---
+title: Using the Helpdesk Features
+description: Complete guide to ITSM-NG's helpdesk interface for end users and technicians
+---
+
+# Using the Helpdesk Features
+
+The helpdesk interface is ITSM-NG's simplified, user-friendly portal for end users to request assistance and track their tickets. This guide covers all helpdesk features from both user and technician perspectives.
+
+## Understanding the Helpdesk Interface
+
+The helpdesk interface provides a streamlined experience compared to the full central interface:
+
+- **Simplified navigation**: Focus on service requests and tickets
+- **Limited permissions**: Users see only their own tickets and authorized content
+- **Self-service features**: Submit requests and find solutions independently
+- **Mobile-friendly**: Responsive design for any device
+
+## Accessing the Helpdesk
+
+### For End Users
+
+<Steps>
+  <Step title="Navigate to Helpdesk">
+    Access the URL: `https://your-itsm-ng-server.com/front/helpdesk.public.php`
+  </Step>
+
+  <Step title="Login">
+    Enter your credentials. Your view automatically switches to the helpdesk interface.
+  </Step>
+
+  <Step title="Explore the Dashboard">
+    The home page shows:
+    - Your active tickets
+    - Tickets awaiting your action
+    - Recent updates
+    - Quick access to create new ticket
+  </Step>
+</Steps>
+
+<Note>
+  The helpdesk URL may be configured differently in your organization. Contact your IT administrator if you cannot access it.
+</Note>
+
+## Creating Tickets from Helpdesk
+
+### Submit a New Request
+
+<Steps>
+  <Step title="Click Create Ticket">
+    On the helpdesk home page, click **Create a ticket** or the **+** button.
+  </Step>
+
+  <Step title="Fill the Form">
+    Provide request details:
+    - **Type**: Select "Incident" (something broken) or "Request" (asking for something)
+    - **Category**: Choose the most appropriate category
+    - **Urgency**: How quickly do you need this resolved?
+    - **Title**: Brief, clear description
+    - **Description**: Full details of the issue or request
+  </Step>
+
+  <Step title="Add Attachments">
+    Optionally attach screenshots, error logs, or documents to help explain the issue.
+  </Step>
+
+  <Step title="Link Assets">
+    If the issue relates to specific hardware or software, link the affected items.
+  </Step>
+
+  <Step title="Submit">
+    Click **Add** to create the ticket. You'll receive a confirmation with the ticket number.
+  </Step>
+</Steps>
+
+<Tip>
+  **Write effective ticket descriptions:**
+  - What were you trying to do?
+  - What happened instead?
+  - Any error messages (exact text or screenshots)
+  - When did this start?
+  - Does it happen every time or intermittently?
+</Tip>
+
+## Managing Your Tickets
+
+### Viewing Your Tickets
+
+The helpdesk provides several views:
+
+- **My tickets**: All tickets where you're the requester
+- **My follow-up**: Tickets you're observing
+- **Open tickets**: Active requests not yet resolved
+- **Closed tickets**: Completed requests
+
+### Understanding Ticket Information
+
+Each ticket displays:
+
+- **Ticket number**: Unique identifier (e.g., #12345)
+- **Status**: Current state (New, Assigned, Processing, etc.)
+- **Priority**: Importance level (Very high to Very low)
+- **Category**: Type of request
+- **Assigned to**: Technician or team handling it
+- **Creation date**: When submitted
+- **Last update**: Most recent activity
+
+### Adding Follow-ups
+
+<Steps>
+  <Step title="Open Your Ticket">
+    Click the ticket number to view details.
+  </Step>
+
+  <Step title="View Timeline">
+    The timeline shows all updates, messages, and actions.
+  </Step>
+
+  <Step title="Add Your Comment">
+    - Scroll to the bottom and find the comment box
+    - Type your update or response
+    - Click **Add** to post
+  </Step>
+</Steps>
+
+<Note>
+  Each follow-up sends notifications to assigned technicians, keeping them informed of new information.
+</Note>
+
+## Approving Solutions
+
+### When a Solution is Proposed
+
+<Steps>
+  <Step title="Review Notification">
+    You'll receive an email when the technician marks the ticket as solved.
+  </Step>
+
+  <Step title="Test the Solution">
+    Try the proposed solution to verify it resolves your issue.
+  </Step>
+
+  <Step title="Approve or Reject">
+    In the ticket:
+    - Click **Approve** if the issue is resolved
+    - Click **Refuse** if the problem persists, and explain why
+  </Step>
+
+  <Step title="Automatic Closure">
+    Approved tickets automatically close. Refused tickets reopen for further work.
+  </Step>
+</Steps>
+
+<Warning>
+  If you don't respond to a solution, the ticket may auto-close after a configured period.
+</Warning>
+
+## Self-Service Features
+
+### Searching the FAQ
+
+Find answers without creating a ticket:
+
+<Steps>
+  <Step title="Access FAQ">
+    Click **FAQ** in the helpdesk menu or on the home page.
+  </Step>
+
+  <Step title="Search or Browse">
+    - **Search**: Enter keywords in the search box
+    - **Browse**: Click categories to explore topics
+  </Step>
+
+  <Step title="View Articles">
+    Click article titles to read full content.
+  </Step>
+
+  <Step title="Rate Helpfulness">
+    Mark articles as helpful or not to improve content quality.
+  </Step>
+</Steps>
+
+<Tip>
+  Search the FAQ before creating a ticket. You might find an immediate solution.
+</Tip>
+
+### Booking Reservations
+
+Reserve available assets like meeting room equipment:
+
+<Steps>
+  <Step title="View Available Items">
+    Navigate to **Reservations** in the helpdesk menu.
+  </Step>
+
+  <Step title="Check Calendar">
+    See which items are available and when.
+  </Step>
+
+  <Step title="Create Reservation">
+    - Select the item
+    - Choose start and end date/time
+    - Add comments about intended use
+    - Submit reservation
+  </Step>
+
+  <Step title="Manage Your Reservations">
+    View, modify, or cancel your bookings in the **My reservations** section.
+  </Step>
+</Steps>
+
+## Updating Your Profile
+
+### Personal Information
+
+<Steps>
+  <Step title="Access Preferences">
+    Click your name in the top-right corner, then **My settings**.
+  </Step>
+
+  <Step title="Update Contact Info">
+    Modify your:
+    - Email address
+    - Phone number
+    - Location
+    - Language preference
+  </Step>
+
+  <Step title="Change Password">
+    Click **Change my password** to update your login credentials.
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Update** to apply modifications.
+  </Step>
+</Steps>
+
+## Notifications and Alerts
+
+### Email Notifications
+
+You receive emails for:
+
+- New ticket creation confirmation
+- Ticket assignment updates
+- Technician follow-ups
+- Solution proposals
+- Ticket closure
+- Satisfaction surveys
+
+### Managing Notifications
+
+<Steps>
+  <Step title="Access Settings">
+    Go to **My settings** from your profile menu.
+  </Step>
+
+  <Step title="Configure Email Preferences">
+    Enable or disable specific notification types.
+  </Step>
+
+  <Step title="Set Default Email">
+    Choose which email address receives notifications.
+  </Step>
+</Steps>
+
+## Satisfaction Surveys
+
+### Completing Surveys
+
+After ticket closure:
+
+<Steps>
+  <Step title="Receive Survey">
+    You'll get an email with a satisfaction survey link.
+  </Step>
+
+  <Step title="Rate Service">
+    Provide ratings on:
+    - Response time
+    - Solution quality
+    - Technician professionalism
+    - Overall satisfaction
+  </Step>
+
+  <Step title="Add Comments">
+    Share specific feedback or suggestions.
+  </Step>
+
+  <Step title="Submit">
+    Your feedback helps improve service quality.
+  </Step>
+</Steps>
+
+<Note>
+  Surveys may expire after a set period. Complete them promptly to ensure your feedback is recorded.
+</Note>
+
+## For Technicians: Helpdesk Mode
+
+Technicians can also work in helpdesk mode:
+
+### Switching Interfaces
+
+- **Helpdesk mode**: Simplified interface
+- **Central mode**: Full administrative interface
+
+Switch between modes using the interface selector in the top menu.
+
+### Benefits of Helpdesk Mode for Technicians
+
+- **Focused view**: Less clutter, ticket-centric
+- **Quick actions**: Streamlined ticket processing
+- **Mobile friendly**: Work from tablets or phones
+- **Similar to user view**: Better understand user experience
+
+### Working Tickets in Helpdesk Mode
+
+<Steps>
+  <Step title="View Assigned Tickets">
+    See all tickets assigned to you or your groups.
+  </Step>
+
+  <Step title="Process Tickets">
+    - Add follow-ups
+    - Create tasks (if permitted)
+    - Update status
+    - Propose solutions
+  </Step>
+
+  <Step title="Access Knowledge Base">
+    Reference FAQ articles to assist users.
+  </Step>
+</Steps>
+
+<Tip>
+  Some technicians prefer helpdesk mode for ticket processing and central mode for configuration and administration.
+</Tip>
+
+## Limitations in Helpdesk Mode
+
+The helpdesk interface is intentionally limited:
+
+### Users Cannot:
+
+- Access administrative settings
+- View other users' tickets (unless shared)
+- Modify asset information directly
+- Create or modify categories, statuses, etc.
+- Access full reporting features
+
+### Users Can Only:
+
+- Create and track their own tickets
+- View assigned FAQ content
+- Make reservations for authorized items
+- Update their own profile
+- Approve/refuse solutions on their tickets
+
+<Note>
+  These limitations ensure security and prevent accidental changes to system configuration.
+</Note>
+
+## Mobile Access
+
+The helpdesk interface is fully responsive:
+
+- **Tablet**: Full functionality with optimized layout
+- **Smartphone**: Essential features with mobile-friendly design
+- **Touch-friendly**: Large buttons and swipe gestures
+
+### Mobile Best Practices
+
+<Tip>
+  **On mobile devices:**
+  - Use the search function to quickly find tickets
+  - Enable push notifications for real-time updates
+  - Bookmark the helpdesk URL for quick access
+  - Take photos of issues to attach to tickets
+</Tip>
+
+## Keyboard Shortcuts (Helpdesk)
+
+| Shortcut | Action |
+|----------|--------|
+| `Alt+T` | Go to ticket list |
+| `T` | Quick ticket access |
+| `B` | Access knowledge base/FAQ |
+
+## Troubleshooting
+
+**Cannot create tickets**
+- Verify you're logged in
+- Check that your account has ticket creation rights
+- Ensure you have access to at least one entity
+- Try clearing browser cache and cookies
+
+**Not receiving email notifications**
+- Check your email address in profile settings
+- Verify email isn't in spam folder
+- Confirm notifications are enabled in settings
+- Contact your administrator to check mail configuration
+
+**Cannot see my tickets**
+- Ensure you're looking in the correct view (My tickets)
+- Check entity filter if you have access to multiple entities
+- Verify tickets aren't in trash
+
+**Cannot access FAQ**
+- Confirm your profile has FAQ read permissions
+- Check that FAQ articles exist and are published
+- Verify articles are visible to your entity/profile
+
+## Best Practices for End Users
+
+<Tip>
+  **Before Creating a Ticket:**
+  - Search the FAQ for existing solutions
+  - Try basic troubleshooting (restart, check cables, etc.)
+  - Gather relevant information (error messages, when it started)
+  - Check if colleagues have similar issues
+</Tip>
+
+<Tip>
+  **When Creating a Ticket:**
+  - Use clear, descriptive titles
+  - Provide complete information upfront
+  - Include screenshots when helpful
+  - Select the correct category
+  - Set realistic urgency levels
+</Tip>
+
+<Tip>
+  **After Creating a Ticket:**
+  - Monitor for technician responses
+  - Respond promptly to questions
+  - Test solutions thoroughly
+  - Approve or refuse solutions quickly
+  - Complete satisfaction surveys
+</Tip>
+
+## Getting Help
+
+If you need assistance using the helpdesk:
+
+1. **Check the FAQ**: Look for "How to" articles
+2. **Contact your IT department**: Create a ticket for helpdesk questions
+3. **Ask colleagues**: They may have encountered similar questions
+4. **Read tooltips**: Hover over field labels for hints

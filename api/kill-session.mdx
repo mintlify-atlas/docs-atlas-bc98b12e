@@ -1,0 +1,58 @@
+---
+title: Kill Session
+description: Destroy a session identified by a session token
+---
+
+Terminate an active API session and invalidate the session token.
+
+## Endpoint
+
+```
+GET /apirest.php/killSession/
+```
+
+## Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+<ParamField header="Session-Token" type="string" required>
+  Session token provided by the `initSession` endpoint
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Authorization string provided by the GLPI API configuration. Required if configured in GLPI.
+</ParamField>
+
+## Response
+
+Returns an empty response body on success.
+
+## Example
+
+```bash
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  'http://path/to/glpi/apirest.php/killSession'
+```
+
+**Response:**
+
+```
+200 OK
+```
+
+## Status Codes
+
+- `200 OK` - Session terminated successfully
+- `400 Bad Request` - Error in input parameters
+
+## Notes
+
+- After calling this endpoint, the session token becomes invalid
+- Any subsequent API calls with the terminated session token will fail
+- This endpoint has write access to the session (one of the few endpoints that does)
+- Always call this endpoint when finished with API operations to clean up resources

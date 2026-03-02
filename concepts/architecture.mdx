@@ -1,0 +1,240 @@
+---
+title: System Architecture
+description: Understanding ITSM-NG's multi-tier architecture and core components
+---
+
+## Overview
+
+ITSM-NG is built on a modular, multi-tier architecture that separates concerns between presentation, business logic, and data persistence. The system follows object-oriented design principles with a class-based structure inherited from GLPI.
+
+## Core Architecture Layers
+
+### 1. Presentation Layer
+
+The presentation layer handles user interactions through multiple interfaces:
+
+- **Standard Interface** (Central): Full-featured interface for administrators and technicians
+- **Simplified Interface** (Helpdesk): Streamlined interface for end users
+- **API Layer** (REST): Programmatic access for integrations
+
+### 2. Business Logic Layer
+
+The business logic is organized around core object types that inherit from `CommonDBTM` (Common Database Table Manager):
+
+```php
+// Base class structure from source code
+class CommonDBTM {
+    // All ITSM objects extend this base class
+    // Provides standard CRUD operations
+    // Handles rights checking and history
+}
+```
+
+**Key Object Categories:**
+
+- **Assets**: Computer, Monitor, Printer, Phone, NetworkEquipment, etc.
+- **ITIL Objects**: Ticket, Problem, Change
+- **Management**: Contract, Budget, License, Certificate
+- **Administration**: User, Entity, Profile, Group
+
+### 3. Data Access Layer
+
+**Database Abstraction:**
+- Uses DBmysql class for database operations
+- Query builder pattern for complex queries
+- Support for MySQL/MariaDB
+
+**Session Management:**
+```php
+// From inc/session.class.php
+$_SESSION['glpiactiveprofile']     // Current user profile
+$_SESSION['glpiactiveentities']    // Accessible entities
+$_SESSION['glpi_currenttime']      // Server time
+```
+
+## Component Architecture
+
+### Entity System (`inc/entity.class.php:40-500`)
+
+Entities form a hierarchical tree structure:
+
+```php
+class Entity extends CommonTreeDropdown {
+    // Hierarchical organization structure
+    public const CONFIG_PARENT = -2;
+    public const CONFIG_NEVER = -10;
+    
+    // Entity-specific rights
+    public const READHELPDESK = 1024;
+    public const UPDATEHELPDESK = 2048;
+}
+```
+
+**Entity Features:**
+- Hierarchical tree (root entity + sub-entities)
+- Recursive rights inheritance
+- Entity-specific configuration (notifications, helpdesk, assets)
+- Geographic location support
+
+### Profile System (`inc/profile.class.php:40-100`)
+
+```php
+class Profile extends CommonDBTM {
+    // Rights management
+    public static $helpdesk_rights = [
+        'ticket', 'followup', 'task',
+        'ticketvalidation', 'reservation',
+        'knowbase', 'reminder_public'
+    ];
+    
+    public static $common_fields = [
+        'id', 'interface', 'is_default', 'name'
+    ];
+}
+```
+
+**Profile Types:**
+- **Standard Interface Profiles**: Full system access with granular rights
+- **Helpdesk Interface Profiles**: Limited to ITIL and support features
+
+### Authentication System (`inc/auth.class.php:40-100`)
+
+```php
+class Auth extends CommonGLPI {
+    // Authentication types
+    public const DB_GLPI  = 1;  // Local database
+    public const MAIL     = 2;  // Mail server
+    public const LDAP     = 3;  // LDAP directory
+    public const EXTERNAL = 4;  // External SSO
+    public const CAS      = 5;  // CAS server
+    public const X509     = 6;  // Certificate
+    public const API      = 7;  // API token
+    public const COOKIE   = 8;  // Remember me
+}
+```
+
+## Request Processing Flow
+
+### Web Request Flow
+
+1. **Entry Point** (`index.php`)
+   - Load configuration
+   - Start session
+   - Check authentication
+
+2. **Session Initialization** (`Session::init()`)
+   - Validate user credentials
+   - Load user profile and rights
+   - Set active entity
+
+3. **Rights Verification**
+   ```php
+   // Entity access check (inc/entity.class.php:183)
+   Session::haveAccessToEntity($entity_id)
+   
+   // Profile rights check
+   Session::haveRight($rightname, $value)
+   ```
+
+4. **Page Rendering**
+   - Load appropriate template
+   - Check item-specific rights
+   - Display interface
+
+### API Request Flow (`apirest.php`)
+
+1. **Authentication** (`initSession`)
+   - Basic auth with credentials
+   - OR user token authentication
+   - Returns session token
+
+2. **Request Processing**
+   - Validate session token
+   - Check app token (if configured)
+   - Verify entity and profile rights
+
+3. **Response**
+   - JSON formatted data
+   - HTTP status codes
+   - HATEOAS links
+
+## Security Architecture
+
+### Rights System
+
+**Hierarchical Rights:**
+```
+Entity Rights → Profile Rights → Item Rights → Field Rights
+```
+
+**Right Constants:**
+```php
+READ    = 1;    // Read access
+UPDATE  = 2;    // Update existing
+CREATE  = 4;    // Create new
+DELETE  = 8;    // Delete/put in trash
+PURGE   = 16;   // Permanently delete
+```
+
+### Data Isolation
+
+- **Entity-based**: Data segregated by entity membership
+- **Profile-based**: Feature access controlled by profile
+- **Recursive mode**: Sub-entity visibility control
+
+## Scalability Considerations
+
+### Performance Features
+
+- **Caching**: PSR-6 compatible cache system
+- **LDAP Pagination**: Configurable page size for large directories
+- **Database Indexes**: Optimized queries on key fields
+- **Session Locking**: Read-only sessions for API parallel requests
+
+### Multi-tenant Support
+
+- Entity isolation for complete data separation
+- Shared or isolated authentication sources per entity
+- Entity-specific configuration and branding
+
+## Extension Points
+
+### Plugin System
+
+```php
+// Plugins can hook into core functionality
+Plugin::doHook('pre_item_add', $params);
+Plugin::doHook('item_add', $params);
+Plugin::doHook('post_item_add', $params);
+```
+
+### Custom Fields
+
+- Additional fields via plugins
+- Custom dropdown values
+- Extended object relationships
+
+## Configuration Storage
+
+### Database Tables
+
+- `glpi_configs`: Global configuration
+- `glpi_entities`: Entity hierarchy and settings
+- `glpi_profiles`: Profile definitions
+- `glpi_profilerights`: Profile-specific rights
+- `glpi_authldaps`: LDAP server configurations
+- `glpi_oidc_config`: OIDC provider settings
+
+### File-based Configuration
+
+- `config/config_db.php`: Database connection
+- `config/local_define.php`: Custom constants
+- `.htaccess`: Web server rules
+
+<Info>
+The architecture is designed for flexibility and extensibility while maintaining security through its layered rights system.
+</Info>
+
+<Warning>
+Direct database modifications should be avoided. Always use the object-oriented API to ensure proper rights checking and history tracking.
+</Warning>

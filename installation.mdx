@@ -1,0 +1,499 @@
+---
+title: Installation Guide
+description: Step-by-step instructions to install ITSM-NG on your server
+---
+
+# Installation Guide
+
+This guide walks you through installing ITSM-NG on your server. The installation process includes checking system requirements, setting up the database, and configuring the application.
+
+## Prerequisites
+
+Before installing ITSM-NG, ensure your server meets the following requirements:
+
+### Web Server
+
+- Apache, Nginx, or compatible web server
+- URL rewriting support (.htaccess for Apache)
+
+### Database
+
+<Warning>
+  MariaDB 10.0+ or MySQL 5.6+ is required. Earlier versions are not supported.
+</Warning>
+
+- MariaDB >= 10.0 **OR**
+- MySQL >= 5.6
+
+### PHP Requirements
+
+**PHP Version**: 8.1 or newer
+
+<Info>
+  ITSM-NG leverages modern PHP features and requires PHP 8.1+. Ensure your server has this version before proceeding.
+</Info>
+
+#### Required PHP Extensions
+
+The following PHP extensions are mandatory:
+
+- `ctype` - Character type checking
+- `curl` - HTTP client for external communications
+- `gd` - Image generation and manipulation
+- `iconv` - Character encoding conversion
+- `intl` - Internationalization support
+- `json` - JSON data handling
+- `mbstring` - Multibyte string support
+- `mysqli` - MySQL database connectivity
+- `session` - Session management
+- `simplexml` - XML parsing
+- `zlib` - Compression support
+
+#### Recommended PHP Extensions
+
+These extensions enhance functionality and performance:
+
+- `apcu` - Application cache for improved performance
+- `exif` - Enhanced image validation for security
+- `imap` - Mail collector and email-based authentication
+- `ldap` - LDAP/Active Directory authentication
+- `openssl` - Encrypted communication support
+- `sodium` - High-performance encryption for sensitive data
+- `zip` and `bz2` - Archive handling for plugin installation
+
+### System Requirements Verification
+
+During installation, ITSM-NG automatically checks all requirements and displays:
+
+- Required dependencies (installation cannot proceed if missing)
+- Optional dependencies (installation can proceed with warnings)
+- PHP version and extension status
+
+## Download ITSM-NG
+
+<Steps>
+  <Step title="Get the Latest Release">
+    Download the latest stable release from the official GitHub repository:
+    
+    ```bash
+    # Download latest release
+    wget https://github.com/itsmng/itsm-ng/archive/refs/heads/main.zip
+    
+    # Or use curl
+    curl -L https://github.com/itsmng/itsm-ng/archive/refs/heads/main.zip -o itsm-ng.zip
+    ```
+    
+    Visit [github.com/itsmng/itsm-ng/releases](https://github.com/itsmng/itsm-ng/releases) to browse all available versions.
+  </Step>
+  
+  <Step title="Extract the Archive">
+    Extract the downloaded archive to your web server's document root:
+    
+    ```bash
+    # Extract to web root
+    unzip itsm-ng.zip -d /var/www/html/
+    
+    # Rename directory (optional)
+    mv /var/www/html/itsm-ng-main /var/www/html/itsm-ng
+    ```
+  </Step>
+  
+  <Step title="Set Proper Permissions">
+    Configure file permissions for the web server user:
+    
+    ```bash
+    # Set ownership (adjust www-data to your web server user)
+    chown -R www-data:www-data /var/www/html/itsm-ng
+    
+    # Set proper permissions
+    find /var/www/html/itsm-ng -type d -exec chmod 755 {} \;
+    find /var/www/html/itsm-ng -type f -exec chmod 644 {} \;
+    
+    # Make specific directories writable
+    chmod -R 775 /var/www/html/itsm-ng/files
+    chmod -R 775 /var/www/html/itsm-ng/config
+    ```
+  </Step>
+</Steps>
+
+## Install Dependencies
+
+ITSM-NG uses Composer for PHP dependencies and npm for JavaScript assets.
+
+<Steps>
+  <Step title="Install PHP Dependencies">
+    Run Composer to install required PHP packages:
+    
+    ```bash
+    cd /var/www/html/itsm-ng
+    composer install --no-dev --optimize-autoloader
+    ```
+    
+    <Note>
+      The `--no-dev` flag excludes development dependencies. The `--optimize-autoloader` flag improves performance.
+    </Note>
+  </Step>
+  
+  <Step title="Install JavaScript Dependencies (Optional)">
+    If you plan to modify frontend assets, install npm dependencies:
+    
+    ```bash
+    npm install
+    npm run build
+    ```
+    
+    For production deployments, pre-built assets are included in release packages.
+  </Step>
+</Steps>
+
+## Web-Based Installation
+
+ITSM-NG provides an intuitive web-based installer that guides you through the setup process.
+
+<Steps>
+  <Step title="Access the Installer">
+    Open your web browser and navigate to your ITSM-NG installation:
+    
+    ```
+    http://your-server.com/itsm-ng/install/install.php
+    ```
+    
+    The installer will automatically detect your server configuration.
+  </Step>
+  
+  <Step title="Select Language">
+    Choose your preferred language for the installation process and default interface language.
+    
+    <Info>
+      ITSM-NG supports multiple languages. You can change this later in the configuration.
+    </Info>
+  </Step>
+  
+  <Step title="Accept License">
+    Review and accept the GNU General Public License v2.0 (GPL-2.0-or-later).
+    
+    The license text is loaded from the `COPYING.txt` file in the installation directory.
+  </Step>
+  
+  <Step title="Choose Installation Type">
+    Select the type of installation:
+    
+    - **Install**: Fresh installation (new database)
+    - **Update**: Upgrade from a previous version
+    
+    For a new installation, choose **Install**.
+  </Step>
+  
+  <Step title="System Requirements Check">
+    The installer validates your server configuration:
+    
+    ```php
+    // The installer checks:
+    - PHP version (>= 8.1)
+    - Required PHP extensions
+    - Optional PHP extensions
+    - File permissions
+    - Database connectivity
+    ```
+    
+    <Warning>
+      If mandatory requirements are missing, you must install them before proceeding. Optional requirements generate warnings but allow installation to continue.
+    </Warning>
+    
+    Requirements are validated using the `RequirementsManager` class:
+    
+    - **Validated** (green): Requirement is met
+    - **Required** (red): Mandatory requirement is missing - installation blocked
+    - **Optional** (orange): Recommended requirement is missing - installation can proceed
+  </Step>
+  
+  <Step title="Database Connection">
+    Configure your database connection:
+    
+    - **Database Host**: Hostname or IP address (e.g., `localhost` or `localhost:3306`)
+    - **Database User**: MySQL user with privileges
+    - **Database Password**: MySQL user password
+    
+    ```bash
+    # Example: Create database and user
+    mysql -u root -p
+    ```
+    
+    ```sql
+    CREATE DATABASE itsm_ng CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE USER 'itsm_user'@'localhost' IDENTIFIED BY 'secure_password';
+    GRANT ALL PRIVILEGES ON itsm_ng.* TO 'itsm_user'@'localhost';
+    FLUSH PRIVILEGES;
+    ```
+    
+    The installer validates:
+    - Connection to database server
+    - MySQL/MariaDB version compatibility
+    - User permissions
+  </Step>
+  
+  <Step title="Database Selection">
+    Choose or create your database:
+    
+    - **Select Existing Database**: Choose from available databases (displays table count and last update)
+    - **Create New Database**: Enter a name for a new database
+    
+    The installer shows database information:
+    - Database name
+    - Number of tables
+    - Creation date
+    - Last update date
+    
+    <Note>
+      For a fresh installation, creating a new database is recommended to avoid conflicts.
+    </Note>
+  </Step>
+  
+  <Step title="Database Initialization">
+    The installer performs the following operations:
+    
+    1. **Security Key Generation**: Creates a cryptographic key for data encryption
+       ```php
+       // Generated automatically by GLPIKey class
+       // Stored in config/glpikey.key
+       ```
+    
+    2. **Configuration File**: Creates `config/config_db.php` with database credentials
+       ```php
+       // Database configuration structure:
+       $DB_host = 'localhost';
+       $DB_user = 'itsm_user';
+       $DB_pass = 'secure_password';
+       $DB_name = 'itsm_ng';
+       ```
+    
+    3. **Database Schema**: Imports the base schema from `install/mysql/glpi-empty.sql`
+    
+    4. **Default Data**: Populates initial data including:
+       - Default profiles (Super-Admin, Admin, Technician, etc.)
+       - Standard configurations
+       - Dropdown values
+       - API clients (localhost access)
+    
+    <Warning>
+      The security key is crucial for data encryption. Back it up securely after installation.
+    </Warning>
+  </Step>
+  
+  <Step title="URL Configuration">
+    The installer automatically detects and configures:
+    
+    - **Base URL**: Main application URL
+    - **API URL**: REST API endpoint URL
+    
+    These are stored in the `glpi_configs` table and can be modified later in Administration > General Setup.
+  </Step>
+  
+  <Step title="Installation Complete">
+    Once installation is complete, you'll see a success message with:
+    
+    - Link to the application
+    - Default login credentials
+    - Security recommendations
+    
+    <Info>
+      For security, delete or rename the `install` directory after successful installation.
+    </Info>
+  </Step>
+</Steps>
+
+## Default Credentials
+
+After installation, you can log in with the default administrator account:
+
+<Warning>
+  **Security Critical**: Change the default password immediately after first login!
+</Warning>
+
+- **Username**: `itsm`
+- **Password**: `itsm`
+
+<Note>
+  The default password hash in the database is: `$2y$10$w8wX.GPGo5q5tlyIXIzY/eBAk/a2r8KmHY8SIl32Q./1Na/nKEkUy`
+</Note>
+
+## Post-Installation Steps
+
+<Steps>
+  <Step title="Secure Your Installation">
+    Remove or restrict access to installation files:
+    
+    ```bash
+    # Option 1: Remove install directory
+    rm -rf /var/www/html/itsm-ng/install
+    
+    # Option 2: Rename install directory
+    mv /var/www/html/itsm-ng/install /var/www/html/itsm-ng/install.bak
+    ```
+  </Step>
+  
+  <Step title="Change Default Password">
+    1. Log in with default credentials
+    2. Click on your username (top-right)
+    3. Navigate to Settings
+    4. Change your password to a strong, unique password
+  </Step>
+  
+  <Step title="Configure Email Notifications">
+    Set up email notifications for ticket updates:
+    
+    1. Go to **Setup > Notifications > Email followups configuration**
+    2. Configure SMTP settings:
+       - SMTP server address
+       - Port (usually 587 for TLS, 465 for SSL)
+       - Authentication credentials
+       - Sender email and name
+  </Step>
+  
+  <Step title="Set Up Automatic Actions">
+    Enable the cron job for automatic tasks:
+    
+    ```bash
+    # Add to crontab
+    */1 * * * * /usr/bin/php /var/www/html/itsm-ng/front/cron.php &>/dev/null
+    ```
+    
+    This handles:
+    - Email collection
+    - Automatic notifications
+    - SLA escalations
+    - Recurrent tickets
+  </Step>
+</Steps>
+
+## Web Server Configuration
+
+### Apache Configuration
+
+Create a virtual host configuration:
+
+```apache
+<VirtualHost *:80>
+    ServerName itsm.example.com
+    DocumentRoot /var/www/html/itsm-ng
+    
+    <Directory /var/www/html/itsm-ng>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    
+    # Security headers
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    ErrorLog ${APACHE_LOG_DIR}/itsm-ng-error.log
+    CustomLog ${APACHE_LOG_DIR}/itsm-ng-access.log combined
+</VirtualHost>
+```
+
+### Nginx Configuration
+
+Example Nginx configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name itsm.example.com;
+    root /var/www/html/itsm-ng;
+    index index.php;
+    
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+    
+    location ~ /\. {
+        deny all;
+    }
+    
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}
+```
+
+## Troubleshooting
+
+### Cannot Connect to Database
+
+<Warning>
+  If you see "Connection error" during database setup:
+</Warning>
+
+1. Verify database server is running:
+   ```bash
+   systemctl status mysql
+   # or
+   systemctl status mariadb
+   ```
+
+2. Check credentials are correct
+3. Ensure user has proper privileges
+4. Verify firewall allows database connections
+
+### PHP Extension Missing
+
+If required extensions are missing:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install php8.1-{ctype,curl,gd,iconv,intl,json,mbstring,mysqli,xml,zip}
+
+# CentOS/RHEL
+sudo yum install php81-{ctype,curl,gd,iconv,intl,json,mbstring,mysqli,xml,zip}
+```
+
+Restart your web server after installing extensions:
+
+```bash
+sudo systemctl restart apache2
+# or
+sudo systemctl restart nginx
+```
+
+### Permission Issues
+
+If you encounter permission errors:
+
+```bash
+# Reset ownership
+sudo chown -R www-data:www-data /var/www/html/itsm-ng
+
+# Ensure writable directories
+sudo chmod -R 775 /var/www/html/itsm-ng/files
+sudo chmod -R 775 /var/www/html/itsm-ng/config
+```
+
+### Database Version Too Old
+
+<Warning>
+  If the installer reports the database version is too old, you must upgrade your database server.
+</Warning>
+
+ITSM-NG requires:
+- MariaDB 10.0 or newer
+- MySQL 5.6 or newer
+
+Consult your database server documentation for upgrade procedures.
+
+## Next Steps
+
+Now that ITSM-NG is installed, proceed to the Quick Start Guide to configure your first ticket and start using the system:
+
+<Card title="Quick Start Guide" icon="rocket" href="/quickstart">
+  Learn how to create your first ticket and configure basic settings
+</Card>

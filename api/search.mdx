@@ -1,0 +1,351 @@
+---
+title: Search Endpoint
+description: Advanced search capabilities for ITSM-NG resources
+---
+
+The Search endpoint exposes ITSM-NG's powerful search engine, allowing you to query any itemtype using complex criteria, filters, and sorting options.
+
+## Basic Search
+
+Perform a basic search on any itemtype.
+
+```bash cURL
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: your_session_token" \
+  -H "App-Token: your_app_token" \
+  'https://your-instance.com/apirest.php/search/Ticket/'
+```
+
+This returns the first 50 tickets with default sorting.
+
+## Search Parameters
+
+<ParamField query="criteria" type="array">
+  Array of search criteria objects
+</ParamField>
+
+<ParamField query="metacriteria" type="array">
+  Array of meta-criteria for searching across related itemtypes (deprecated - use `meta` flag in criteria)
+</ParamField>
+
+<ParamField query="sort" type="integer" default="1">
+  Field ID to sort by (see searchOptions)
+</ParamField>
+
+<ParamField query="order" type="string" default="ASC">
+  Sort order: `ASC` or `DESC`
+</ParamField>
+
+<ParamField query="range" type="string" default="0-50">
+  Pagination range (e.g., `0-49` for first 50 results)
+</ParamField>
+
+<ParamField query="forcedisplay" type="array">
+  Array of field IDs to force display in results
+</ParamField>
+
+<ParamField query="rawdata" type="boolean" default="false">
+  Include raw SQL query and debug info
+</ParamField>
+
+<ParamField query="withindexes" type="boolean" default="false">
+  Index results by item ID instead of sequential array
+</ParamField>
+
+<ParamField query="uid_cols" type="boolean" default="false">
+  Use unique column identifiers instead of numeric IDs
+</ParamField>
+
+<ParamField query="giveItems" type="boolean" default="false">
+  Include HTML-formatted data in `data_html` key
+</ParamField>
+
+## Search Criteria
+
+Each criterion object has the following structure:
+
+<ResponseField name="link" type="string">
+  Logical operator: `AND`, `OR`, `AND NOT`, `NOT` (optional for first criterion)
+</ResponseField>
+
+<ResponseField name="field" type="integer" required>
+  Field ID from searchOptions (e.g., 1 = name, 2 = ID)
+</ResponseField>
+
+<ResponseField name="searchtype" type="string" required>
+  Search operator:
+  - `contains` - Wildcard search (default)
+  - `equals` - Exact match
+  - `notequals` - Not equal
+  - `lessthan` - Less than
+  - `morethan` - Greater than
+  - `under` - Hierarchical under
+  - `notunder` - Not hierarchical under
+</ResponseField>
+
+<ResponseField name="value" type="string" required>
+  Search value
+</ResponseField>
+
+<ResponseField name="meta" type="boolean" default="false">
+  Whether this is a meta-criteria (search across related itemtype)
+</ResponseField>
+
+<ResponseField name="itemtype" type="string">
+  Related itemtype for meta-criteria (e.g., `User`)
+</ResponseField>
+
+<ResponseField name="criteria" type="array">
+  Nested criteria for complex AND/OR logic
+</ResponseField>
+
+## Search Examples
+
+### Simple Text Search
+
+Search for computers with "LAPTOP" in the name:
+
+```bash cURL
+curl -g -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/search/Computer/?criteria[0][field]=1&criteria[0][searchtype]=contains&criteria[0][value]=LAPTOP'
+```
+
+### Multiple Criteria with AND
+
+Search for tickets that are open (status 1-4) AND high priority (5):
+
+```bash cURL
+curl -g -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/search/Ticket/?criteria[0][field]=12&criteria[0][searchtype]=equals&criteria[0][value]=1&criteria[1][link]=AND&criteria[1][field]=3&criteria[1][searchtype]=equals&criteria[1][value]=5'
+```
+
+### Nested Criteria (Complex Logic)
+
+Search for tickets where (category=Hardware AND priority=5) OR (category=Software AND priority=4):
+
+```bash cURL
+curl -g -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/search/Ticket/?criteria[0][criteria][0][field]=7&criteria[0][criteria][0][searchtype]=equals&criteria[0][criteria][0][value]=1&criteria[0][criteria][1][link]=AND&criteria[0][criteria][1][field]=3&criteria[0][criteria][1][searchtype]=equals&criteria[0][criteria][1][value]=5&criteria[1][link]=OR&criteria[1][criteria][0][field]=7&criteria[1][criteria][0][searchtype]=equals&criteria[1][criteria][0][value]=2&criteria[1][criteria][1][link]=AND&criteria[1][criteria][1][field]=3&criteria[1][criteria][1][searchtype]=equals&criteria[1][criteria][1][value]=4'
+```
+
+### Meta-Criteria (Cross-Itemtype Search)
+
+Search for computers used by users with "john" in their name:
+
+```bash cURL
+curl -g -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/search/Computer/?criteria[0][field]=1&criteria[0][searchtype]=contains&criteria[0][value]=&criteria[1][link]=AND&criteria[1][meta]=true&criteria[1][itemtype]=User&criteria[1][field]=1&criteria[1][searchtype]=contains&criteria[1][value]=john'
+```
+
+### Date Range Search
+
+Search for tickets created in the last 7 days:
+
+```bash cURL
+curl -g -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/search/Ticket/?criteria[0][field]=15&criteria[0][searchtype]=morethan&criteria[0][value]=-7DAY'
+```
+
+<Info>
+  For date searches, you can use relative values like `-7DAY`, `-1MONTH`, `-1YEAR`, or absolute dates in `YYYY-MM-DD` format.
+</Info>
+
+## Wildcard Search
+
+The `contains` searchtype supports wildcards:
+
+- `^value` - Starts with "value"
+- `value$` - Ends with "value"
+- `^value$` - Exact match
+- `value` - Contains "value" anywhere (default)
+
+Example - Find tickets starting with "INC":
+
+```bash cURL
+curl -g -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/search/Ticket/?criteria[0][field]=1&criteria[0][searchtype]=contains&criteria[0][value]=^INC'
+```
+
+## List Search Options
+
+Before searching, you need to know which fields are available. Get searchOptions for an itemtype:
+
+```bash cURL
+curl -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/listSearchOptions/Ticket'
+```
+
+### Response Example
+
+```json
+{
+  "common": "Characteristics",
+  "1": {
+    "name": "Name",
+    "table": "glpi_tickets",
+    "field": "name",
+    "datatype": "itemlink",
+    "uid": "Ticket.name"
+  },
+  "2": {
+    "name": "ID",
+    "table": "glpi_tickets",
+    "field": "id",
+    "datatype": "number",
+    "uid": "Ticket.id"
+  },
+  "12": {
+    "name": "Status",
+    "table": "glpi_tickets",
+    "field": "status",
+    "datatype": "specific",
+    "uid": "Ticket.status"
+  }
+}
+```
+
+Use the numeric keys (1, 2, 12, etc.) as `field` values in your search criteria.
+
+## Pagination
+
+Handle large result sets with pagination:
+
+```bash cURL
+# First 50 results
+curl -g -X GET \
+  'https://your-instance.com/apirest.php/search/Ticket/?range=0-49'
+
+# Next 50 results
+curl -g -X GET \
+  'https://your-instance.com/apirest.php/search/Ticket/?range=50-99'
+```
+
+The response includes headers:
+- `Content-Range: 0-49/500` - Current range / total count
+- `Accept-Range: Ticket 1000` - Max items per request
+
+## Sorting Results
+
+Sort by any field:
+
+```bash cURL
+# Sort by priority (field 3) descending
+curl -g -X GET \
+  'https://your-instance.com/apirest.php/search/Ticket/?sort=3&order=DESC'
+```
+
+## Force Display Fields
+
+Control which fields appear in results:
+
+```bash cURL
+curl -g -X GET \
+  'https://your-instance.com/apirest.php/search/Ticket/?forcedisplay[0]=1&forcedisplay[1]=12&forcedisplay[2]=15'
+```
+
+This forces display of fields 1 (name), 12 (status), and 15 (date) in results.
+
+<Note>
+  Fields 1 (ID), 2 (name), and 80 (entity) are always included in results by default.
+</Note>
+
+## Response Format
+
+```json
+{
+  "totalcount": 150,
+  "count": 50,
+  "range": "0-49",
+  "data": [
+    {
+      "1": "Printer not working",
+      "2": "123",
+      "12": "Processing (assigned)",
+      "80": "Root Entity"
+    },
+    {
+      "1": "Network issue",
+      "2": "124",
+      "12": "New",
+      "80": "Root Entity"
+    }
+  ]
+}
+```
+
+- `totalcount` - Total matching results (ignoring pagination)
+- `count` - Number of results in this response
+- `range` - Current pagination range
+- `data` - Array of result objects (keys are searchOption IDs)
+
+## Special Itemtypes
+
+### AllAssets
+
+Search across all asset types simultaneously:
+
+```bash cURL
+curl -g -X GET \
+  -H "Session-Token: your_session_token" \
+  'https://your-instance.com/apirest.php/search/AllAssets/?criteria[0][field]=1&criteria[0][searchtype]=contains&criteria[0][value]=DELL'
+```
+
+This searches Computers, Monitors, Phones, Printers, etc. in one query.
+
+## Common Search Patterns
+
+<Accordion title="Find all assets in a location">
+  ```bash
+  curl -g -X GET \
+    'https://your-instance.com/apirest.php/search/Computer/?criteria[0][field]=3&criteria[0][searchtype]=equals&criteria[0][value]=5'
+  ```
+  
+  Where field 3 is `locations_id=5`.
+</Accordion>
+
+<Accordion title="Find tickets assigned to me">
+  ```bash
+  # Assuming your user ID is 42
+  curl -g -X GET \
+    'https://your-instance.com/apirest.php/search/Ticket/?criteria[0][field]=5&criteria[0][searchtype]=equals&criteria[0][value]=42'
+  ```
+  
+  Where field 5 is assigned technician.
+</Accordion>
+
+<Accordion title="Find software installed on computers">
+  ```bash
+  curl -g -X GET \
+    'https://your-instance.com/apirest.php/search/Computer/?criteria[0][meta]=true&criteria[0][itemtype]=Software&criteria[0][field]=1&criteria[0][searchtype]=contains&criteria[0][value]=Office'
+  ```
+  
+  This uses meta-criteria to search across the Software relationship.
+</Accordion>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use listSearchOptions First" icon="list">
+    Always retrieve searchOptions to know available fields before building queries.
+  </Card>
+  
+  <Card title="Pagination for Large Results" icon="table-list">
+    Use appropriate range values to avoid loading thousands of results at once.
+  </Card>
+  
+  <Card title="Indexed Results for Lookups" icon="hashtag">
+    Use `withindexes=true` when you need to look up results by item ID.
+  </Card>
+  
+  <Card title="Test Criteria Incrementally" icon="vial">
+    Build complex searches step-by-step, testing each criterion before adding more.
+  </Card>
+</CardGroup>

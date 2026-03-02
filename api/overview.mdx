@@ -1,0 +1,293 @@
+---
+title: API Overview
+description: Introduction to the ITSM-NG REST API for managing your IT assets and services
+---
+
+The ITSM-NG REST API allows you to interact with your ITSM-NG instance programmatically. You can manage assets, ITIL objects, configurations, and more through HTTP requests.
+
+## Base URL
+
+The API is available at:
+
+```
+http://your-domain/apirest.php/
+```
+
+<Info>
+You can also configure URL rewriting to use cleaner URLs like `http://your-domain/api/`. See the [Server Configuration](#server-configuration) section below.
+</Info>
+
+## API Features
+
+### Session Management
+- Initialize and terminate API sessions
+- Manage user profiles and entities
+- Session-based authentication with tokens
+
+### CRUD Operations
+- **Create**: Add new items to ITSM-NG
+- **Read**: Retrieve single items or collections
+- **Update**: Modify existing items
+- **Delete**: Remove items (with trash bin support)
+
+### Advanced Features
+- **Search Engine**: Complex queries with multiple criteria
+- **Batch Operations**: Create, update, or delete multiple items in one request
+- **Relationships**: Retrieve related items (HATEOAS support)
+- **Expand Dropdowns**: Get human-readable names instead of IDs
+- **File Upload/Download**: Handle document attachments
+
+## Supported Content Types
+
+The API supports the following content types:
+
+- `application/json` - Primary format for all requests/responses
+- `multipart/form-data` - For file uploads
+- `application/x-www-form-urlencoded` - For form data
+
+<Warning>
+You should always provide a `Content-Type` header in your HTTP calls. For most operations, use `application/json`.
+</Warning>
+
+## HTTP Methods
+
+The API uses standard HTTP methods:
+
+| Method | Purpose | Example |
+|--------|---------|----------|
+| GET | Retrieve data | Get a computer, list tickets |
+| POST | Create new items | Add a new user |
+| PUT/PATCH | Update existing items | Modify a ticket |
+| DELETE | Remove items | Delete an asset |
+| OPTIONS | CORS preflight | Check allowed methods |
+
+<Note>
+GET requests must have an empty body. All parameters should be passed in the URL query string.
+</Note>
+
+## Response Format
+
+All API responses are returned in JSON format. Successful responses include the requested data, while errors return error codes and messages.
+
+### Success Response Example
+
+```json
+{
+  "id": 71,
+  "name": "Server-01",
+  "serial": "ABC123",
+  "entities_id": 0,
+  "date_mod": "2024-01-15 10:30:00"
+}
+```
+
+### Error Response Example
+
+```json
+[
+  "ERROR_SESSION_TOKEN_MISSING",
+  "parameter session_token is missing or empty; view documentation in your browser at http://your-domain/api/#ERROR_SESSION_TOKEN_MISSING"
+]
+```
+
+## Pagination
+
+When retrieving collections, the API uses range-based pagination:
+
+- Default range: `0-50` (first 51 items)
+- Custom range: Use the `range` parameter (e.g., `range=100-149`)
+
+Pagination headers are included in responses:
+
+```
+Content-Range: 0-50/200
+Accept-Range: Computer 990
+```
+
+## Item Types
+
+The API works with ITSM-NG **itemtypes** - classes that inherit from `CommonDBTM`. Common itemtypes include:
+
+- **Assets**: `Computer`, `Monitor`, `Printer`, `Phone`, `NetworkEquipment`
+- **ITIL**: `Ticket`, `Problem`, `Change`
+- **Management**: `User`, `Group`, `Entity`, `Profile`
+- **Configuration**: `Location`, `Manufacturer`, `Software`
+
+## Search Options
+
+Each itemtype has **searchOptions** - numbered field identifiers used for searching and filtering:
+
+- `1` - typically the ID field
+- `2` - typically the name field
+- `3+` - various other fields
+
+Use the `listSearchOptions` endpoint to discover available fields for any itemtype.
+
+## Session Management
+
+The API uses session-based authentication:
+
+1. Call `initSession` to authenticate and receive a `session_token`
+2. Include the `session_token` in all subsequent requests
+3. Call `killSession` when finished
+
+<Info>
+By default, API sessions are **read-only** to support parallel calls. Only certain methods write to the session. You can override this with `session_write=true`.
+</Info>
+
+## IP Filtering
+
+For security, the API can be restricted to specific IP addresses:
+
+- Configure IPv4 ranges and/or IPv6 addresses in ITSM-NG
+- Navigate to: **Setup > General > API**
+- Define API clients with allowed IP addresses
+
+## CORS Support
+
+The API includes Cross-Origin Resource Sharing (CORS) headers:
+
+```
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: PUT, GET, POST, DELETE, OPTIONS
+Access-Control-Allow-Headers: origin, content-type, accept, session-token, authorization
+```
+
+## HATEOAS
+
+The API supports **HATEOAS** (Hypermedia as the Engine of Application State) by including related resource links in responses:
+
+```json
+{
+  "id": 71,
+  "name": "Server-01",
+  "links": [
+    {
+      "rel": "Entity",
+      "href": "http://your-domain/api/Entity/0"
+    },
+    {
+      "rel": "Location",
+      "href": "http://your-domain/api/Location/3"
+    }
+  ]
+}
+```
+
+Disable HATEOAS with `get_hateoas=false` parameter.
+
+## Special Features
+
+### Expand Dropdowns
+
+Convert foreign key IDs to human-readable names:
+
+```bash
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  'http://your-domain/apirest.php/Computer/71?expand_dropdowns=true'
+```
+
+### Get SHA1 Signature
+
+Retrieve a SHA1 hash instead of full data (useful for change detection):
+
+```bash
+?get_sha1=true
+```
+
+### Additional Data
+
+Retrieve related information with `with_*` parameters:
+
+- `with_devices` - Hardware components
+- `with_disks` - File systems (computers)
+- `with_softwares` - Installed software
+- `with_networkports` - Network connections
+- `with_infocoms` - Financial information
+- `with_contracts` - Associated contracts
+- `with_documents` - Attached documents
+- `with_tickets` - Related tickets
+- `with_problems` - Related problems
+- `with_changes` - Related changes
+- `with_notes` - Notes
+- `with_logs` - History/logs
+
+## Server Configuration
+
+### Apache HTTP Server
+
+To enable URL rewriting, uncomment these lines in the root `.htaccess` file:
+
+```apacheconf
+<IfModule mod_rewrite.c>
+   RewriteEngine On
+   RewriteCond %{REQUEST_FILENAME} !-f
+   RewriteCond %{REQUEST_FILENAME} !-d
+   RewriteRule api/(.*)$ apirest.php/$1
+</IfModule>
+```
+
+This allows you to use:
+```
+http://your-domain/api/Computer/71
+```
+
+instead of:
+```
+http://your-domain/apirest.php/Computer/71
+```
+
+## API Configuration
+
+Enable and configure the API in ITSM-NG:
+
+1. Navigate to **Setup > General > API**
+2. Enable the API
+3. Configure:
+   - **Enable login with credentials**: Allow user/password authentication
+   - **Enable login with external token**: Allow user_token authentication
+   - **API Clients**: Define applications with App-Tokens and IP restrictions
+
+<Warning>
+The API must be enabled in ITSM-NG configuration before it can be used. If disabled, all API calls will return an error.
+</Warning>
+
+## Quick Start Example
+
+```bash
+# 1. Initialize session
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Basic $(echo -n 'username:password' | base64)" \
+  -H "App-Token: your_app_token" \
+  'http://your-domain/apirest.php/initSession'
+
+# Response: {"session_token": "83af7e620c83a50a18d3eac2f6ed05a3ca0bea62"}
+
+# 2. Get a computer
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  -H "App-Token: your_app_token" \
+  'http://your-domain/apirest.php/Computer/71'
+
+# 3. Kill session
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  -H "App-Token: your_app_token" \
+  'http://your-domain/apirest.php/killSession'
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn about authentication methods and token management
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/api/errors">
+    Understand error codes and how to handle them
+  </Card>
+</CardGroup>

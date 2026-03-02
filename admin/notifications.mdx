@@ -1,0 +1,411 @@
+---
+title: Notification System Setup
+description: Configure email notifications, notification templates, and recipients in ITSM-NG
+---
+
+## Overview
+
+ITSM-NG provides a comprehensive notification system to alert users about events such as ticket updates, asset changes, and system alerts. Notifications can be sent via email or integrated chat systems.
+
+## Notification Architecture
+
+The notification system consists of:
+
+- **Notifications**: Define when and to whom notifications are sent
+- **Notification Templates**: Define the content and format of notifications
+- **Notification Recipients**: Specify who receives notifications
+- **Notification Events**: Trigger conditions for sending notifications
+
+## Configuring Email Settings
+
+### Global Email Configuration
+
+<Steps>
+  <Step title="Navigate to email settings">
+    Go to **Setup > Notifications > Email followups configuration**.
+  </Step>
+  
+  <Step title="Configure sender">
+    Set the default sender information:
+    - **Administrator email**: Default sender address
+    - **Administrator name**: Sender display name
+    - **No-reply email**: Address for notifications that don't accept replies
+  </Step>
+  
+  <Step title="Configure reply-to">
+    Set reply-to address:
+    - **Reply-to email**: Where replies are sent
+    - **Reply-to name**: Display name for reply address
+  </Step>
+  
+  <Step title="Set notification options">
+    - **Delay to send email notifications**: Minutes (0-60)
+    - **Enable notifications by default**: For new users
+  </Step>
+</Steps>
+
+### Entity-Specific Email Settings
+
+Override global settings per entity:
+
+```yaml
+Entity email settings:
+  Administrator email: entity-admin@example.com
+  Administrator name: Entity Admin
+  Reply-to email: entity-reply@example.com
+  Email signature: Custom signature for this entity
+  Notification prefix: [ENTITY-NAME]
+```
+
+If not set, inherits from parent entity or global settings.
+
+## Creating Notifications
+
+<Steps>
+  <Step title="Access notifications">
+    Go to **Setup > Notifications**.
+  </Step>
+  
+  <Step title="Add notification">
+    Click **Add** to create a new notification.
+  </Step>
+  
+  <Step title="Configure notification">
+    Set basic parameters:
+    - **Name**: Descriptive name
+    - **Active**: Enable/disable notification
+    - **Type**: Item type (Ticket, Change, Problem, etc.)
+    - **Event**: Trigger event (New, Update, Delete, etc.)
+    - **Allow response**: Enable email replies
+  </Step>
+  
+  <Step title="Assign templates">
+    Link notification templates:
+    - Click **Notification templates** tab
+    - Add templates for different notification methods (Email, Chat)
+  </Step>
+  
+  <Step title="Configure recipients">
+    Click **Recipients** tab and select targets.
+  </Step>
+</Steps>
+
+See `/inc/notification.class.php:200-289` for notification form implementation.
+
+## Notification Events
+
+Common notification events by item type:
+
+### Ticket Events
+```yaml
+New ticket: When a ticket is created
+Update ticket: When a ticket is modified
+Close ticket: When a ticket is closed
+Satisfaction survey: After ticket closure
+Solution approval: When solution is approved/rejected
+Validation request: When validation is requested
+Validation answer: When validation is answered
+```
+
+### Asset Events
+```yaml
+New item: Asset created
+Update item: Asset modified
+Delete item: Asset deleted
+Contract expiry: Contract is expiring
+License expiry: License is expiring
+```
+
+### System Events
+```yaml
+Cartridge threshold: Low cartridge stock
+Consumable threshold: Low consumable stock
+Cron task error: Automated task failure
+Database connection: DB connection issues
+```
+
+## Notification Templates
+
+### Creating Templates
+
+<Steps>
+  <Step title="Navigate to templates">
+    Go to **Setup > Notifications > Notification templates**.
+  </Step>
+  
+  <Step title="Add template">
+    Click **Add** and configure:
+    - **Name**: Template name
+    - **Type**: Item type
+    - **CSS**: Custom styling (optional)
+  </Step>
+  
+  <Step title="Add translations">
+    Click **Translations** tab to add content:
+    - **Language**: Target language
+    - **Subject**: Email subject line
+    - **Body (HTML)**: HTML email content
+    - **Body (Text)**: Plain text version
+  </Step>
+</Steps>
+
+### Template Tags
+
+Use tags to insert dynamic content:
+
+```html
+<!-- Common tags -->
+##ticket.title##
+##ticket.id##
+##ticket.url##
+##ticket.entity##
+##ticket.authors##
+##ticket.description##
+
+<!-- User tags -->
+##user.firstname##
+##user.lastname##
+##user.email##
+
+<!-- System tags -->
+##lang.ticket.title##
+##glpi.url##
+```
+
+### Foreach Loops
+
+Iterate over collections:
+
+```html
+##FOREACH FOLLOWUPS##
+  <p>
+    Author: ##followup.author##<br>
+    Date: ##followup.date##<br>
+    Description: ##followup.description##
+  </p>
+##ENDFOREACH FOLLOWUPS##
+```
+
+## Notification Recipients
+
+### Available Recipient Types
+
+Recipients can be:
+
+#### User Types
+```yaml
+Global administrator: ITSM-NG superadmin
+Entity administrator: Entity admin email
+Author: Item creator
+Technician in charge: Assigned technician
+Item owner: Owner of related item
+Recipient: Ticket requester
+Observer: Ticket watcher
+Validation approver: User who must validate
+Task assignee: User assigned to task
+```
+
+#### Group Types
+```yaml
+Profile: All users with specific profile
+Group: All group members
+Group supervisor: Only group managers
+Group without supervisor: Members except managers
+Assigned group: Ticket assigned group
+Requester group: Ticket requester's group
+Observer group: Ticket observer group
+```
+
+See `/inc/notification.class.php:43-134` for recipient type constants.
+
+### Configuring Recipients
+
+<Steps>
+  <Step title="Edit notification">
+    Open an existing notification.
+  </Step>
+  
+  <Step title="Access recipients tab">
+    Click the **Recipients** tab.
+  </Step>
+  
+  <Step title="Select recipients">
+    From the dropdown, select:
+    - User types (Author, Technician, etc.)
+    - Groups
+    - Profiles
+  </Step>
+  
+  <Step title="Save">
+    Click **Update** to apply changes.
+  </Step>
+</Steps>
+
+## Notification Queue
+
+### Viewing Pending Notifications
+
+Check the notification queue:
+
+```sql
+SELECT * FROM glpi_queuednotifications 
+WHERE is_deleted = 0 
+ORDER BY create_time DESC;
+```
+
+### Processing Queue
+
+Notifications are processed by cron:
+
+- **queuednotification**: Sends queued notifications
+- **queuednotificationclean**: Cleans old queue entries
+
+<Note>
+Ensure the `queuednotification` cron task runs frequently (e.g., every minute) for timely delivery.
+</Note>
+
+## Testing Notifications
+
+### Manual Testing
+
+<Steps>
+  <Step title="Enable test mode">
+    In notification settings, configure a test email address.
+  </Step>
+  
+  <Step title="Trigger event">
+    Perform an action that triggers the notification (e.g., create ticket).
+  </Step>
+  
+  <Step title="Check logs">
+    Review notification logs in **Setup > Notifications > Queue**.
+  </Step>
+  
+  <Step title="Verify delivery">
+    Check that email was received correctly.
+  </Step>
+</Steps>
+
+## Advanced Configuration
+
+### Email Signature
+
+Configure entity-specific signatures:
+
+<Steps>
+  <Step title="Edit entity">
+    Go to **Administration > Entities** and select entity.
+  </Step>
+  
+  <Step title="Notifications tab">
+    In the **Notifications** tab, set:
+    - **Email signature**: HTML or text signature
+  </Step>
+</Steps>
+
+See `/inc/notification.class.php:644-655` for signature retrieval.
+
+### Notification Prefix
+
+Customize the email subject prefix:
+
+```yaml
+Default: [GLPI]
+Entity override: [COMPANY-HELPDESK]
+```
+
+Set in entity configuration: **Prefix for notifications**.
+
+### Allow Response
+
+Enable email parsing for responses:
+
+<Steps>
+  <Step title="Check allow response">
+    In notification configuration, enable **Allow response**.
+  </Step>
+  
+  <Step title="Configure mail receiver">
+    Set up a mail receiver to process incoming emails.
+  </Step>
+  
+  <Step title="Test response">
+    Reply to a notification email and verify it's processed.
+  </Step>
+</Steps>
+
+See `/inc/notification.class.php:749-752` for allow response implementation.
+
+## Notification Modes
+
+### Email Notifications
+
+Default mode, sends via SMTP or PHP mail():
+
+```yaml
+Mode: Email
+Method: SMTP, PHP mail, Sendmail
+Encryption: None, TLS, SSL
+```
+
+### Chat Notifications
+
+Integrate with chat platforms (Rocket.Chat, Slack, etc.):
+
+```yaml
+Mode: Chat
+Webhook URL: Chat platform webhook
+Channel: Target channel/room
+```
+
+## Troubleshooting
+
+### Notifications Not Sent
+
+Check:
+- Notification is active
+- Event matches configuration
+- Recipients are configured
+- Cron task is running
+- SMTP settings are correct
+- Queue is not stuck
+
+### Users Not Receiving
+
+Verify:
+- User has valid email address
+- User has notifications enabled in preferences
+- User has rights to the entity
+- User is not in date validity range
+- Email is not marked as spam
+
+### Template Not Working
+
+Confirm:
+- Template is assigned to notification
+- Translation exists for user's language
+- Tags are correctly formatted
+- HTML is valid
+
+## Best Practices
+
+<Card title="Notification Guidelines">
+  - **Don't overnotify**: Only send relevant notifications
+  - **Clear subjects**: Use descriptive subject lines with tags
+  - **Test templates**: Always test in non-production first
+  - **Multilingual**: Provide translations for all languages
+  - **Plain text**: Always include text version for HTML emails
+  - **Unsubscribe**: Respect user notification preferences
+  - **Monitor queue**: Check for stuck notifications regularly
+  - **Log retention**: Configure appropriate queue cleanup
+</Card>
+
+## Related Source Code
+
+Key notification classes:
+
+- Notification: `/inc/notification.class.php`
+- NotificationTarget: `/inc/notificationtarget.class.php`
+- Notification events: Lines 43-134 for recipient types
+- Email sending: NotificationMailing class
+- Queue processing: QueuedNotification class

@@ -1,0 +1,471 @@
+---
+title: Profiles and Permissions
+description: Comprehensive guide to ITSM-NG's role-based access control system
+---
+
+## Overview
+
+ITSM-NG uses a sophisticated profile-based permissions system that controls what users can see and do. Profiles define **roles** with specific rights across different modules and features.
+
+## Profile Basics
+
+### What is a Profile?
+
+A profile is a collection of rights that defines:
+- Which features a user can access
+- What actions they can perform (read, create, update, delete)
+- Which interface they use (Standard or Helpdesk)
+
+```php
+// From inc/profile.class.php:40-80
+class Profile extends CommonDBTM {
+    // Common fields for all profiles
+    public static $common_fields = [
+        'id',           // Profile identifier
+        'interface',    // 'central' or 'helpdesk'
+        'is_default',   // Default profile for new users
+        'name'          // Profile name
+    ];
+}
+```
+
+### Profile Types
+
+**Standard Interface Profiles** (`interface = 'central'`):
+- Full access to all ITSM-NG features
+- Asset management, configuration, administration
+- Advanced ITIL features
+
+**Helpdesk Interface Profiles** (`interface = 'helpdesk'`):
+- Simplified interface for end users
+- Limited to support-related features
+- Ticket creation and tracking
+
+```php
+// Helpdesk-specific rights (inc/profile.class.php:46-70)
+public static $helpdesk_rights = [
+    'create_ticket_on_login',  // Auto-create ticket on login
+    'ticket',                   // Ticket management
+    'followup',                 // Add followups
+    'task',                     // Create tasks
+    'ticketvalidation',         // Validate tickets
+    'helpdesk_hardware',        // Link hardware to tickets
+    'knowbase',                 // Access knowledge base
+    'reservation',              // Reserve items
+    'reminder_public',          // Public reminders
+    'rssfeed_public',           // Public RSS feeds
+];
+```
+
+## Rights System
+
+### Right Values
+
+Rights use binary flags that can be combined:
+
+```php
+READ    = 1;    // View items
+UPDATE  = 2;    // Modify existing items  
+CREATE  = 4;    // Create new items
+DELETE  = 8;    // Delete items (move to trash)
+PURGE   = 16;   // Permanently delete
+```
+
+### Combining Rights
+
+Rights are combined using bitwise operations:
+
+```php
+// Read + Create = 1 + 4 = 5
+$profile['computer'] = READ | CREATE;  // Can view and create computers
+
+// Full rights = 1 + 2 + 4 + 8 + 16 = 31
+$profile['ticket'] = READ | UPDATE | CREATE | DELETE | PURGE;
+```
+
+### Checking Rights
+
+Users' current rights are stored in session:
+
+```php
+// Check if user has specific right
+Session::haveRight('computer', CREATE);  // Can create computers?
+Session::haveRight('ticket', UPDATE);    // Can update tickets?
+
+// Check multiple rights
+Session::haveRightsOr('entity', [UPDATE, CREATE]);  // Has either right?
+Session::haveRightsAnd('ticket', [READ, UPDATE]);   // Has both rights?
+```
+
+## Profile Configuration
+
+### Main Profile Settings
+
+```php
+// From inc/profile.class.php:703-763
+'name'                      // Profile name
+'interface'                 // 'central' or 'helpdesk'
+'is_default'                // Default profile for new users
+'password_update'           // Can update own password
+'create_ticket_on_login'    // Show ticket form on login
+'comment'                   // Profile description
+```
+
+### Rights Categories
+
+Profiles organize rights into logical groups:
+
+#### 1. Assets (`inc/profile.class.php:1000-1060`)
+
+```php
+'computer'              // Computers
+'monitor'               // Monitors
+'software'              // Software
+'networking'            // Network equipment
+'printer'               // Printers
+'peripheral'            // Peripherals
+'phone'                 // Phones
+'cartridge'             // Cartridges
+'consumable'            // Consumables
+'internet'              // Network management
+'devicesimcard_pinpuk'  // SIM card PIN/PUK (READ, UPDATE only)
+```
+
+#### 2. Assistance/ITIL (`inc/profile.class.php:1360-1410`)
+
+```php
+'ticket'                // Tickets
+'followup'              // Followups
+'task'                  // Tasks
+'ticketvalidation'      // Ticket validation
+'ticketcost'            // Ticket costs
+'ticketrecurrent'       // Recurrent tickets
+'itiltemplate'          // ITIL templates
+'tickettemplates_id'    // Default ticket template
+'changetemplates_id'    // Default change template
+'problemtemplates_id'   // Default problem template
+```
+
+#### 3. Management (`inc/profile.class.php:1112-1180`)
+
+```php
+'license'               // Software licenses
+'contact_enterprise'    // Contacts and suppliers
+'document'              // Documents
+'contract'              // Contracts
+'infocom'               // Financial information
+'budget'                // Budgets
+'line'                  // Lines
+'certificate'           // Certificates
+'datacenter'            // Datacenters
+'cluster'               // Clusters
+'domain'                // Domains
+'appliance'             // Appliances
+```
+
+#### 4. Tools (`inc/profile.class.php:1243-1275`)
+
+```php
+'reminder_public'       // Public reminders
+'rssfeed_public'        // Public RSS feeds
+'bookmark_public'       // Public saved searches
+'reports'               // Reports
+'knowbase'              // Knowledge base
+'reservation'           // Reservations
+'project'               // Projects
+'projecttask'           // Project tasks
+```
+
+#### 5. Administration
+
+```php
+'entity'                // Entities
+'profile'               // Profiles
+'user'                  // Users
+'group'                 // Groups
+'rule_ldap'             // LDAP rules
+'rule_import'           // Import rules
+'config'                // General configuration
+```
+
+#### 6. Setup
+
+```php
+'dropdown'              // Dropdowns management
+'backup'                // Backups
+'transfer'              // Entity transfers
+'queuednotification'    // Notification queue
+'logs'                  // System logs
+```
+
+## Special Rights
+
+### Helpdesk-Specific Rights
+
+```php
+// From inc/profile.class.php:775-865
+'helpdesk_hardware'     // Link hardware (bitwise flags)
+'helpdesk_item_type'    // Allowed item types (serialized array)
+'show_group_hardware'   // See group members' hardware
+```
+
+**Helpdesk Hardware Flags**:
+```php
+// What hardware can be linked to tickets
+1   // Own items
+2   // Group items
+4   // All items
+```
+
+### Life Cycle Rights
+
+Control ticket status changes:
+
+```php
+// From inc/profile.class.php:316-363
+'ticket_status'         // Allowed status transitions (serialized)
+'problem_status'        // Problem status transitions
+'change_status'         // Change status transitions
+```
+
+Example:
+```php
+// Define allowed transitions
+$cycle = [
+    Ticket::INCOMING => [
+        Ticket::ASSIGNED => 1,    // Can assign incoming tickets
+        Ticket::PLANNED => 1,     // Can plan incoming tickets
+    ],
+    Ticket::ASSIGNED => [
+        Ticket::PLANNED => 1,     // Can plan assigned tickets
+        Ticket::SOLVED => 1,      // Can solve assigned tickets
+    ]
+];
+```
+
+### Visibility Rights
+
+```php
+'statistic'             // View statistics
+'planning'              // Access planning/calendar
+'externalevent'         // Manage external events in planning
+```
+
+## Profile Assignment
+
+### User-Profile-Entity Relationship
+
+Users are assigned profiles through the **Profile_User** table:
+
+```php
+// A user can have multiple profile-entity combinations
+User ID: 42
+  ├─ Profile: Technician, Entity: IT Department (recursive)
+  ├─ Profile: Supervisor,  Entity: Helpdesk (not recursive)
+  └─ Profile: Self-Service, Entity: Root Entity (recursive)
+```
+
+### Active Profile
+
+Users select one active profile per session:
+
+```php
+$_SESSION['glpiactiveprofile']  // Current profile data
+```
+
+### Switching Profiles
+
+Users can switch between their assigned profiles:
+
+```bash
+# Via API (apirest.md:298-324)
+curl -X POST \
+  -H 'Session-Token: xxx' \
+  -d '{"profiles_id": 4}' \
+  'http://glpi/apirest.php/changeActiveProfile'
+```
+
+## Rights Calculation
+
+### Profile Hierarchy
+
+Rights are NOT hierarchical - each profile is independent:
+
+```
+Super-Admin Profile: Full rights (31 on all modules)
+Technician Profile:  Limited rights (7 on tickets, 1 on assets)
+End-User Profile:    Minimal rights (5 on tickets only)
+```
+
+### Right Inheritance
+
+```php
+// From inc/profile.class.php:557-611
+// Profiles can only be assigned to users with EQUAL or LESSER rights
+public static function currentUserHaveMoreRightThan($profile_ids) {
+    // Compares all rights between current user and target profiles
+    // Returns true only if current user has >= rights on ALL modules
+}
+```
+
+## Default Profiles
+
+### Built-in Profiles
+
+ITSM-NG includes several default profiles:
+
+- **Super-Admin**: Full system access (all rights = 31)
+- **Admin**: Administrative access (limited purge rights)
+- **Supervisor**: Team management and oversight
+- **Technician**: ITIL and asset management
+- **Hotliner**: Helpdesk interface only
+- **Observer**: Read-only access
+- **Self-Service**: End user with ticket creation
+
+### Default Profile Flag
+
+```php
+// From inc/profile.class.php:212-222
+'is_default' = 1  // Automatically assigned to new users
+
+// Only ONE profile can be default
+// Setting a new default removes flag from others
+```
+
+## Creating Custom Profiles
+
+### Via Web Interface
+
+<Accordion title="Step-by-Step Profile Creation">
+
+1. Navigate to **Setup** > **Profiles**
+2. Click **Add** to create new profile
+3. Configure basic settings:
+   - Name
+   - Interface type (Standard or Helpdesk)
+   - Default profile flag
+4. Configure rights in tabs:
+   - **Assets**: Hardware management rights
+   - **Assistance**: ITIL features
+   - **Life Cycles**: Status transitions
+   - **Management**: Contracts, licenses, etc.
+   - **Tools**: Knowledge base, reports, etc.
+   - **Administration**: User/entity management
+   - **Setup**: System configuration
+
+</Accordion>
+
+### Rights Matrix
+
+Each rights section displays a matrix:
+
+```
+                 Read  Update  Create  Delete  Purge
+Computer         [✓]   [✓]     [✓]     [✓]     [ ]
+Ticket           [✓]   [✓]     [✓]     [ ]     [ ]
+Contract         [✓]   [ ]     [ ]     [ ]     [ ]
+```
+
+## Advanced Rights Management
+
+### Field-Level Permissions
+
+Some itemtypes restrict field updates based on profile:
+
+```php
+// From inc/entity.class.php:67-121
+private static $field_right = [
+    'entity' => ['address', 'email', 'phone', ...],
+    'infocom' => ['autofill_buy_date', ...],
+    'notification' => ['admin_email', ...],
+    'entity_helpdesk' => ['tickettemplates_id', ...],
+    'config' => ['enable_custom_css', ...]
+];
+```
+
+### Conditional Rights
+
+```php
+// Example: Can only delete OWN tickets
+if ($ticket->fields['users_id_recipient'] == Session::getLoginUserID()) {
+    // Allow deletion
+}
+```
+
+## Profile Security
+
+### Profile Protection
+
+```php
+// From inc/profile.class.php:401-446
+// Cannot delete last profile with UPDATE rights on profiles
+// Prevents locking yourself out of profile management
+public function pre_deleteItem() {
+    if (last_profile_with_rights('profile', UPDATE)) {
+        return false;  // Deletion refused
+    }
+}
+```
+
+### Self-Service Restrictions
+
+Helpdesk profiles have automatic restrictions:
+
+```php
+// From inc/profile.class.php:490-503
+public function cleanProfile() {
+    if ($this->fields['interface'] == 'helpdesk') {
+        // Remove non-helpdesk rights
+        // Keep only $helpdesk_rights fields
+    }
+}
+```
+
+## Best Practices
+
+### Profile Design
+
+1. **Principle of Least Privilege**: Grant minimum necessary rights
+2. **Role-Based**: Create profiles for job functions, not individuals
+3. **Consistent Naming**: Use clear, descriptive names
+4. **Document Custom Profiles**: Note purpose and special configurations
+
+### Common Profile Patterns
+
+**IT Support Team**:
+- Read all assets
+- Create/Update/Delete tickets
+- Read-only contracts and licenses
+- Access knowledge base
+
+**Department Manager**:
+- Read assets in their entity
+- View all tickets (not modify)
+- Access reports and statistics
+- Read-only budget and contracts
+
+**End User**:
+- Helpdesk interface
+- Create tickets
+- View own tickets
+- Access knowledge base
+- Make reservations
+
+### Testing Profiles
+
+1. Create test users with new profiles
+2. Verify access to features
+3. Test edge cases (entity boundaries, status transitions)
+4. Document expected behavior
+
+<Warning>
+Modifying the Super-Admin profile is not recommended. Always maintain at least one profile with full rights.
+</Warning>
+
+<Note>
+Profiles combined with entities provide powerful multi-tenant capabilities. A user can have different profiles in different entities.
+</Note>
+
+<Info>
+The rights system is checked on every action. Use `Session::haveRight()` in custom code to respect profile permissions.
+</Info>

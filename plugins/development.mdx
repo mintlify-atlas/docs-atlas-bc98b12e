@@ -1,0 +1,751 @@
+---
+title: Developing Custom Plugins
+description: Complete guide to creating custom plugins for ITSM-NG
+---
+
+This comprehensive guide walks you through creating custom plugins for ITSM-NG, from basic structure to advanced integration.
+
+## Getting Started
+
+### Prerequisites
+
+Before developing a plugin, you should have:
+
+- Understanding of PHP and object-oriented programming
+- Familiarity with ITSM-NG architecture and database structure
+- Knowledge of HTML, CSS, and JavaScript for UI components
+- A development environment with ITSM-NG installed
+- Access to ITSM-NG source code for reference
+
+### Development Environment Setup
+
+<Steps>
+  <Step title="Create Plugin Directory">
+    ```bash
+    cd /var/www/html/itsm-ng/plugins/
+    mkdir myplugin
+    cd myplugin
+    ```
+  </Step>
+
+  <Step title="Set Development Permissions">
+    ```bash
+    chown -R $USER:www-data /var/www/html/itsm-ng/plugins/myplugin
+    chmod -R 775 /var/www/html/itsm-ng/plugins/myplugin
+    ```
+  </Step>
+
+  <Step title="Enable Error Reporting">
+    In your ITSM-NG config, enable debugging during development to catch errors early.
+  </Step>
+</Steps>
+
+## Basic Plugin Structure
+
+Create the following directory structure:
+
+```
+plugins/myplugin/
+├── setup.php              # Required: Plugin metadata and initialization
+├── hook.php               # Optional: Hook implementations
+├── README.md              # Documentation
+├── LICENSE                # License file (GPLv2+ recommended)
+├── locales/              # Internationalization
+│   ├── en_GB.mo
+│   ├── en_GB.po
+│   ├── fr_FR.mo
+│   └── fr_FR.po
+├── inc/                  # PHP classes
+│   ├── config.class.php
+│   ├── item.class.php
+│   └── profile.class.php
+├── front/                # User interface pages
+│   ├── config.php
+│   ├── item.php
+│   └── item.form.php
+├── ajax/                 # AJAX handlers
+│   └── handler.php
+├── css/                  # Stylesheets
+│   └── styles.css
+├── js/                   # JavaScript files
+│   └── scripts.js
+├── pics/                 # Images and icons
+│   └── icon.png
+└── sql/                  # Database scripts
+    ├── install.sql
+    └── uninstall.sql
+```
+
+## Creating setup.php
+
+The `setup.php` file is required and contains plugin metadata and initialization:
+
+```php
+<?php
+
+/**
+ * Plugin version information
+ */
+function plugin_version_myplugin() {
+    return [
+        'name'           => 'My Plugin',
+        'version'        => '1.0.0',
+        'author'         => 'Your Name',
+        'license'        => 'GPLv2+',
+        'homepage'       => 'https://github.com/yourusername/myplugin',
+        'requirements'   => [
+            'glpi' => [
+                'min' => '10.0.0',
+                'max' => '11.0.0'
+            ],
+            'php' => [
+                'min' => '7.4.0',
+                'exts' => [
+                    'curl',
+                    'json',
+                    'mysqli'
+                ]
+            ]
+        ]
+    ];
+}
+
+/**
+ * Check plugin prerequisites
+ */
+function plugin_myplugin_check_prerequisites() {
+    // Check GLPI version
+    if (version_compare(GLPI_VERSION, '10.0.0', 'lt')) {
+        echo "This plugin requires GLPI >= 10.0.0";
+        return false;
+    }
+    
+    // Check required extensions
+    if (!extension_loaded('curl')) {
+        echo "This plugin requires PHP curl extension";
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Check plugin configuration
+ */
+function plugin_myplugin_check_config() {
+    // Return true if plugin is configured
+    // Return false if configuration is required
+    return true;
+}
+
+/**
+ * Initialize plugin
+ */
+function plugin_init_myplugin() {
+    global $PLUGIN_HOOKS;
+    
+    // Register plugin
+    $PLUGIN_HOOKS['csrf_compliant']['myplugin'] = true;
+    
+    // Initialize plugin classes
+    Plugin::registerClass('PluginMypluginItem', [
+        'document_types'     => true,
+        'ticket_types'       => true,
+        'addtabon'          => ['Computer', 'Ticket']
+    ]);
+    
+    // Add menu entry
+    $PLUGIN_HOOKS['menu_toadd']['myplugin'] = ['tools' => 'PluginMypluginMenu'];
+    
+    // Add to config menu
+    $PLUGIN_HOOKS['config_page']['myplugin'] = 'front/config.php';
+    
+    // Add CSS and JS
+    $PLUGIN_HOOKS['add_css']['myplugin'] = 'css/styles.css';
+    $PLUGIN_HOOKS['add_javascript']['myplugin'] = 'js/scripts.js';
+}
+```
+
+Source: `inc/plugin.class.php:1521-1538`
+
+## Installation and Uninstallation
+
+### Install Function
+
+Create database tables and initialize plugin data:
+
+```php
+/**
+ * Install plugin
+ */
+function plugin_myplugin_install() {
+    global $DB;
+    
+    // Check if already installed
+    if (TableExists('glpi_plugin_myplugin_items')) {
+        return true;
+    }
+    
+    // Create database tables
+    $query = "CREATE TABLE IF NOT EXISTS `glpi_plugin_myplugin_items` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `name` varchar(255) NOT NULL,
+        `entities_id` int(11) NOT NULL DEFAULT '0',
+        `is_recursive` tinyint(1) NOT NULL DEFAULT '0',
+        `date_creation` timestamp NULL DEFAULT NULL,
+        `date_mod` timestamp NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `name` (`name`),
+        KEY `entities_id` (`entities_id`),
+        KEY `is_recursive` (`is_recursive`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+    
+    $DB->queryOrDie($query, $DB->error());
+    
+    // Create config table
+    $query = "CREATE TABLE IF NOT EXISTS `glpi_plugin_myplugin_configs` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `api_key` varchar(255) DEFAULT NULL,
+        `api_url` varchar(255) DEFAULT NULL,
+        PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+    
+    $DB->queryOrDie($query, $DB->error());
+    
+    // Insert default configuration
+    $query = "INSERT INTO `glpi_plugin_myplugin_configs` 
+              (`id`, `api_key`, `api_url`) 
+              VALUES (1, '', '')";
+    
+    $DB->queryOrDie($query, $DB->error());
+    
+    return true;
+}
+```
+
+Source: `inc/plugin.class.php:724-784`
+
+### Uninstall Function
+
+Remove all plugin data:
+
+```php
+/**
+ * Uninstall plugin
+ */
+function plugin_myplugin_uninstall() {
+    global $DB;
+    
+    // Drop all plugin tables
+    $tables = [
+        'glpi_plugin_myplugin_items',
+        'glpi_plugin_myplugin_configs'
+    ];
+    
+    foreach ($tables as $table) {
+        $query = "DROP TABLE IF EXISTS `$table`";
+        $DB->queryOrDie($query, $DB->error());
+    }
+    
+    // Remove plugin-specific rights from profiles
+    $query = "DELETE FROM `glpi_profilerights` 
+              WHERE `name` LIKE 'plugin_myplugin_%'";
+    $DB->queryOrDie($query, $DB->error());
+    
+    // Clean up cron tasks
+    CronTask::Unregister('myplugin');
+    
+    return true;
+}
+```
+
+Source: `inc/plugin.class.php:670-711`
+
+## Creating Plugin Classes
+
+### Basic Item Class
+
+Create `inc/item.class.php`:
+
+```php
+<?php
+
+class PluginMypluginItem extends CommonDBTM {
+    
+    // Right management
+    static $rightname = 'plugin_myplugin_item';
+    
+    /**
+     * Get type name
+     */
+    static function getTypeName($nb = 0) {
+        return __('My Plugin Item', 'myplugin');
+    }
+    
+    /**
+     * Get menu name
+     */
+    static function getMenuName() {
+        return static::getTypeName(Session::getPluralNumber());
+    }
+    
+    /**
+     * Show form
+     */
+    function showForm($ID, $options = []) {
+        if (!$this->canView()) {
+            return false;
+        }
+        
+        if ($ID > 0) {
+            $this->check($ID, READ);
+        } else {
+            $this->check(-1, CREATE);
+        }
+        
+        $this->showFormHeader($options);
+        
+        echo "<tr class='tab_bg_1'>";
+        echo "<td>" . __('Name') . "</td>";
+        echo "<td>";
+        Html::autocompletionTextField($this, 'name');
+        echo "</td>";
+        echo "</tr>";
+        
+        $this->showFormButtons($options);
+        
+        return true;
+    }
+    
+    /**
+     * Get search options
+     */
+    function rawSearchOptions() {
+        $tab = [];
+        
+        $tab[] = [
+            'id'   => 'common',
+            'name' => self::getTypeName()
+        ];
+        
+        $tab[] = [
+            'id'            => '1',
+            'table'         => $this->getTable(),
+            'field'         => 'name',
+            'name'          => __('Name'),
+            'datatype'      => 'itemlink',
+            'massiveaction' => false
+        ];
+        
+        $tab[] = [
+            'id'            => '2',
+            'table'         => $this->getTable(),
+            'field'         => 'id',
+            'name'          => __('ID'),
+            'massiveaction' => false,
+            'datatype'      => 'number'
+        ];
+        
+        return $tab;
+    }
+}
+```
+
+Source: `inc/plugin.class.php:1307-1372`
+
+### Configuration Class
+
+Create `inc/config.class.php`:
+
+```php
+<?php
+
+class PluginMypluginConfig extends CommonDBTM {
+    
+    static $rightname = 'config';
+    
+    /**
+     * Get configuration
+     */
+    static function getConfig() {
+        global $DB;
+        
+        $config = new self();
+        $config->getFromDB(1);
+        
+        return $config->fields;
+    }
+    
+    /**
+     * Update configuration
+     */
+    static function setConfig($data) {
+        $config = new self();
+        return $config->update(array_merge(['id' => 1], $data));
+    }
+    
+    /**
+     * Show configuration form
+     */
+    function showConfigForm() {
+        if (!Config::canUpdate()) {
+            return false;
+        }
+        
+        $config = self::getConfig();
+        
+        echo "<form method='post' action='" . $this->getFormURL() . "'>";
+        echo "<div class='center' id='tabsbody'>";
+        echo "<table class='tab_cadre_fixe'>";
+        
+        echo "<tr><th colspan='2'>" . __('Plugin Configuration', 'myplugin') . "</th></tr>";
+        
+        echo "<tr class='tab_bg_1'>";
+        echo "<td>" . __('API Key', 'myplugin') . "</td>";
+        echo "<td>";
+        echo "<input type='text' name='api_key' value='" . $config['api_key'] . "' size='50'>";
+        echo "</td>";
+        echo "</tr>";
+        
+        echo "<tr class='tab_bg_1'>";
+        echo "<td>" . __('API URL', 'myplugin') . "</td>";
+        echo "<td>";
+        echo "<input type='text' name='api_url' value='" . $config['api_url'] . "' size='50'>";
+        echo "</td>";
+        echo "</tr>";
+        
+        echo "<tr class='tab_bg_2'>";
+        echo "<td class='center' colspan='2'>";
+        echo "<input type='submit' name='update' value='" . __('Save') . "' class='submit'>";
+        echo "</td>";
+        echo "</tr>";
+        
+        echo "</table></div>";
+        Html::closeForm();
+        
+        return true;
+    }
+}
+```
+
+## Implementing Hooks
+
+Create `hook.php` to handle various ITSM-NG hooks:
+
+```php
+<?php
+
+/**
+ * Display hook on item form
+ */
+function plugin_myplugin_item_add_form(CommonDBTM $item) {
+    if ($item instanceof Computer) {
+        echo "<tr class='tab_bg_1'>";
+        echo "<th>" . __('My Plugin Info', 'myplugin') . "</th>";
+        echo "<td>Custom content for computers</td>";
+        echo "</tr>";
+    }
+}
+
+/**
+ * Hook called when item is added
+ */
+function plugin_myplugin_item_add(CommonDBTM $item) {
+    if ($item instanceof Computer) {
+        // Perform action when computer is created
+        error_log("Computer created: " . $item->fields['name']);
+    }
+}
+
+/**
+ * Hook called when item is updated
+ */
+function plugin_myplugin_item_update(CommonDBTM $item) {
+    if ($item instanceof Computer) {
+        // Perform action when computer is updated
+        error_log("Computer updated: " . $item->fields['name']);
+    }
+}
+
+/**
+ * Hook called when item is deleted
+ */
+function plugin_myplugin_item_purge(CommonDBTM $item) {
+    if ($item instanceof Computer) {
+        // Perform cleanup when computer is deleted
+        error_log("Computer deleted: " . $item->fields['name']);
+    }
+}
+
+/**
+ * Add custom search options
+ */
+function plugin_myplugin_getAddSearchOptionsNew($itemtype) {
+    $options = [];
+    
+    if ($itemtype == 'Computer') {
+        $options[] = [
+            'id'       => '9000',
+            'table'    => 'glpi_plugin_myplugin_items',
+            'field'    => 'custom_field',
+            'name'     => __('Custom Field', 'myplugin'),
+            'datatype' => 'text'
+        ];
+    }
+    
+    return $options;
+}
+
+/**
+ * Register database relations
+ */
+function plugin_myplugin_getDatabaseRelations() {
+    return [
+        'glpi_computers' => [
+            'glpi_plugin_myplugin_items' => 'computers_id'
+        ],
+        'glpi_entities' => [
+            'glpi_plugin_myplugin_items' => 'entities_id'
+        ]
+    ];
+}
+
+/**
+ * Register dropdowns
+ */
+function plugin_myplugin_getDropdown() {
+    return [
+        'PluginMypluginCategory' => __('My Plugin Category', 'myplugin'),
+        'PluginMypluginType'     => __('My Plugin Type', 'myplugin')
+    ];
+}
+```
+
+Source: `inc/plugin.class.php:1383-1427, 1650-1680, 1583-1595`
+
+## Adding Menu Entries
+
+Register your plugin in the menu system:
+
+```php
+function plugin_init_myplugin() {
+    global $PLUGIN_HOOKS;
+    
+    // Add to Tools menu
+    $PLUGIN_HOOKS['menu_toadd']['myplugin'] = [
+        'tools' => 'PluginMypluginMenu'
+    ];
+    
+    // Add to Config menu  
+    $PLUGIN_HOOKS['menu_toadd']['myplugin'] = [
+        'config' => 'PluginMypluginMenu'
+    ];
+}
+
+class PluginMypluginMenu extends CommonGLPI {
+    
+    static function getMenuName() {
+        return __('My Plugin', 'myplugin');
+    }
+    
+    static function getMenuContent() {
+        $menu = [];
+        
+        $menu['title'] = self::getMenuName();
+        $menu['page']  = '/plugins/myplugin/front/item.php';
+        $menu['icon']  = 'fas fa-puzzle-piece';
+        
+        $menu['options']['item'] = [
+            'title' => PluginMypluginItem::getTypeName(2),
+            'page'  => '/plugins/myplugin/front/item.php',
+            'icon'  => 'fas fa-list'
+        ];
+        
+        $menu['options']['config'] = [
+            'title' => __('Configuration'),
+            'page'  => '/plugins/myplugin/front/config.php',
+            'icon'  => 'fas fa-cog'
+        ];
+        
+        return $menu;
+    }
+}
+```
+
+## Internationalization
+
+Create translation files in the `locales/` directory:
+
+### Creating .pot Template
+
+```bash
+cd /var/www/html/itsm-ng/plugins/myplugin
+xgettext -o locales/myplugin.pot --language=PHP \
+  --keyword=__ --keyword=_n:1,2 --keyword=_x:1c,2 \
+  --from-code=UTF-8 *.php inc/*.php front/*.php
+```
+
+### Creating Language Files
+
+1. Copy `myplugin.pot` to `locales/en_GB.po`
+2. Translate strings in the .po file
+3. Compile to .mo format:
+
+```bash
+msgfmt locales/en_GB.po -o locales/en_GB.mo
+```
+
+### Using Translations
+
+```php
+// Simple translation
+echo __('Hello World', 'myplugin');
+
+// Plural forms
+echo _n('One item', '%d items', $count, 'myplugin');
+
+// Context-specific translation
+echo _x('button', 'Save', 'myplugin');
+```
+
+Source: `inc/plugin.class.php:288-378`
+
+## Best Practices
+
+### Naming Conventions
+
+1. **Plugin directory**: Lowercase, no spaces (e.g., `myplugin`)
+2. **Classes**: `PluginMypluginClassname` (CamelCase with plugin prefix)
+3. **Functions**: `plugin_myplugin_function_name` (lowercase with underscores)
+4. **Database tables**: `glpi_plugin_myplugin_tablename` (lowercase with underscores)
+5. **Rights**: `plugin_myplugin_right` (lowercase with underscores)
+
+### Security
+
+```php
+// Always sanitize user input
+$name = $DB->escape($_POST['name']);
+
+// Use prepared statements
+$query = "SELECT * FROM glpi_plugin_myplugin_items WHERE id = ?";
+$result = $DB->query($query, [$id]);
+
+// Check permissions
+if (!$item->canView()) {
+    Html::displayRightError();
+    return;
+}
+
+// CSRF protection (automatically enabled)
+$PLUGIN_HOOKS['csrf_compliant']['myplugin'] = true;
+```
+
+Source: `inc/plugin.class.php:803-813`
+
+### Performance
+
+1. **Lazy loading**: Only load classes when needed
+2. **Caching**: Use ITSM-NG's cache system for expensive operations
+3. **Database indexing**: Add indexes to frequently queried columns
+4. **Minimize hooks**: Only implement hooks you actually need
+
+### Error Handling
+
+```php
+try {
+    $result = $DB->query($query);
+    if (!$result) {
+        throw new Exception('Database query failed');
+    }
+} catch (Exception $e) {
+    Toolbox::logError($e->getMessage());
+    Session::addMessageAfterRedirect(
+        __('An error occurred', 'myplugin'),
+        false,
+        ERROR
+    );
+}
+```
+
+## Testing Your Plugin
+
+<Steps>
+  <Step title="Install in Development">
+    Install the plugin in your development ITSM-NG instance.
+  </Step>
+
+  <Step title="Test Installation Process">
+    Verify database tables are created correctly and default data is inserted.
+  </Step>
+
+  <Step title="Test Activation">
+    Ensure the plugin activates without errors and appears in menus.
+  </Step>
+
+  <Step title="Test Functionality">
+    Verify all features work as expected, including forms, searches, and hooks.
+  </Step>
+
+  <Step title="Test Deactivation">
+    Confirm the plugin deactivates cleanly without breaking ITSM-NG.
+  </Step>
+
+  <Step title="Test Uninstallation">
+    Verify all data is removed and no orphaned records remain.
+  </Step>
+
+  <Step title="Test Updates">
+    Test upgrading from one version to another with database migrations.
+  </Step>
+</Steps>
+
+## Debugging
+
+Enable debugging during development:
+
+```php
+// In your plugin code
+error_log("Debug info: " . print_r($data, true));
+
+// Use GLPI's debugging
+Toolbox::logDebug("Debug message");
+Toolbox::logError("Error message");
+Toolbox::logWarning("Warning message");
+
+// Check SQL queries
+$DB->query($query) or die($DB->error());
+```
+
+## Distribution
+
+### Preparing for Release
+
+1. **Update version** in `setup.php`
+2. **Create changelog** documenting changes
+3. **Update README** with installation instructions
+4. **Test thoroughly** in a clean ITSM-NG installation
+5. **Check compatibility** with target ITSM-NG versions
+
+### Packaging
+
+```bash
+# Create release archive
+cd /var/www/html/itsm-ng/plugins/
+tar -czf myplugin-1.0.0.tar.gz myplugin/ \
+  --exclude='myplugin/.git' \
+  --exclude='myplugin/node_modules' \
+  --exclude='myplugin/*.log'
+```
+
+### Publishing
+
+1. Create a GitHub repository
+2. Tag releases with version numbers
+3. Submit to GLPI/ITSM-NG plugin directory
+4. Provide documentation and support channels
+
+## Next Steps
+
+- [Plugin System Overview](/plugins/overview) - Understand the architecture
+- [Installing Plugins](/plugins/installation) - Learn plugin installation
+- ITSM-NG Developer Documentation - Advanced topics and API reference

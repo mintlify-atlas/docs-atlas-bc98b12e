@@ -1,0 +1,376 @@
+---
+title: Multi-Entity System
+description: Understanding ITSM-NG's hierarchical entity structure for organizational management
+---
+
+## What are Entities?
+
+Entities in ITSM-NG represent organizational units in a hierarchical tree structure. They enable you to:
+
+- Segment your organization into departments, sites, or business units
+- Isolate data and configurations per organizational unit
+- Manage different access rights based on organizational structure
+- Configure entity-specific settings for helpdesk, notifications, and assets
+
+## Entity Hierarchy
+
+### Root Entity
+
+Every ITSM-NG instance starts with a **Root Entity** (ID: 0):
+
+```php
+// From inc/entity.class.php:320-323
+if ($input['id'] == 0) {
+    $input['entities_id'] = -1;  // Root has no parent
+    $input['level'] = 1;          // Top level
+}
+```
+
+### Tree Structure
+
+Entities form a hierarchical tree:
+
+```
+Root Entity (0)
+├── Department A (1)
+│   ├── Team A1 (3)
+│   └── Team A2 (4)
+└── Department B (2)
+    ├── Site B1 (5)
+    └── Site B2 (6)
+```
+
+**Key Properties** (`inc/entity.class.php:40-50`):
+- **Recursive**: Entities can inherit from parent settings
+- **Hierarchical**: Organized in a tree with parent-child relationships
+- **Isolated**: Data can be separated per entity
+
+## Entity Configuration
+
+### Basic Settings
+
+Each entity has fundamental configuration:
+
+```php
+// Entity fields from inc/entity.class.php:450-515
+'id'            // Unique identifier
+'name'          // Entity name
+'completename'  // Full hierarchical name (Parent > Child)
+'entities_id'   // Parent entity ID
+'level'         // Depth in hierarchy
+'comment'       // Description
+```
+
+### Address Information
+
+Entities can store contact details:
+
+- Physical address (street, city, state, country, postal code)
+- Contact information (phone, fax, email, website)
+- Geographic coordinates (latitude, longitude, altitude)
+
+### Advanced Configuration (`inc/entity.class.php:60-122`)
+
+#### LDAP Integration
+
+```php
+'authldaps_id'       // Associated LDAP server
+'entity_ldapfilter'  // LDAP search filter
+'ldap_dn'            // LDAP distinguished name
+'mail_domain'        // Email domain for this entity
+```
+
+#### Asset Management
+
+```php
+'entities_id_software'  // Entity for software creation
+'level'                 // Hierarchy level
+```
+
+## Entity Rights System
+
+### User Entity Access
+
+Users access entities through their profile:
+
+```php
+// Check entity access (inc/entity.class.php:183-185)
+public function canViewItem() {
+    return Session::haveAccessToEntity($this->getField('id'));
+}
+```
+
+### Recursive Access
+
+When a user has **recursive** rights on an entity, they automatically access:
+- The entity itself
+- All child entities (sub-entities)
+- All descendants in the tree
+
+```
+User with recursive rights on "Department A":
+✓ Department A
+✓ Team A1  (child)
+✓ Team A2  (child)
+✗ Department B  (not in hierarchy)
+```
+
+### Special Entity Rights (`inc/entity.class.php:56-58`)
+
+```php
+public const READHELPDESK    = 1024;  // Read helpdesk items
+public const UPDATEHELPDESK  = 2048;  // Update helpdesk settings
+```
+
+## Entity-Specific Features
+
+### 1. Notification Settings (`inc/entity.class.php:89-108`)
+
+Each entity can configure:
+
+- **Email Settings**
+  ```php
+  'admin_email'       // Administrator email
+  'admin_reply'       // Reply-to address
+  'admin_email_name'  // Administrator name
+  'mailing_signature' // Email signature
+  ```
+
+- **Notification Delays**
+  ```php
+  'delay_send_emails'           // Delay before sending
+  'is_notif_enable_default'     // Enable by default
+  'notification_subject_tag'    // Subject prefix
+  ```
+
+- **Alert Thresholds**
+  ```php
+  'default_cartridges_alarm_threshold'
+  'default_consumables_alarm_threshold'
+  'use_contracts_alert'
+  'use_licenses_alert'
+  ```
+
+### 2. Helpdesk Configuration (`inc/entity.class.php:110-118`)
+
+```php
+'calendars_id'              // Working hours calendar
+'tickettype'                // Default ticket type
+'auto_assign_mode'          // Auto-assignment rules
+'autoclose_delay'           // Auto-close solved tickets after X days
+'autopurge_delay'           // Auto-purge closed tickets after X days
+'tickettemplates_id'        // Default ticket template
+'changetemplates_id'        // Default change template
+'problemtemplates_id'       // Default problem template
+'anonymize_support_agents'  // Hide agent names
+```
+
+### 3. Inventory Settings (`inc/entity.class.php:82-88`)
+
+```php
+'autofill_buy_date'         // Auto-fill purchase date
+'autofill_delivery_date'    // Auto-fill delivery date
+'autofill_order_date'       // Auto-fill order date
+'autofill_use_date'         // Auto-fill startup date
+'autofill_warranty_date'    // Auto-fill warranty date
+'autofill_decommission_date' // Auto-fill decommission date
+```
+
+## Configuration Inheritance
+
+### Parent Configuration (`inc/entity.class.php:59-60`)
+
+```php
+public const CONFIG_PARENT = -2;  // Inherit from parent
+public const CONFIG_NEVER  = -10; // Never use this feature
+```
+
+### Inheritance Flow
+
+```php
+// Example: Auto-close delay
+// From inc/entity.class.php:1380-1421
+Entity::getEntitiesToNotify($field) {
+    // Root entity configuration
+    if ($root_value > 0) {
+        $entities[0] = $root_value;
+    }
+    
+    // Child entities inherit if CONFIG_PARENT
+    foreach ($children as $entity) {
+        if ($entity[$field] == CONFIG_PARENT) {
+            $entities[$entity_id] = $entities[$parent_id];
+        }
+    }
+}
+```
+
+## Session Entity Management
+
+### Active Entity
+
+Users work within an **active entity** context:
+
+```php
+$_SESSION['glpiactive_entity']          // Current entity ID
+$_SESSION['glpiactive_entity_recursive'] // Include sub-entities?
+$_SESSION['glpiactiveentities']         // All accessible entity IDs
+```
+
+### Switching Entities
+
+Users can switch their active entity if they have access:
+
+```
+User Profile → Multiple Entity Access → Select Active Entity
+```
+
+### API Entity Selection
+
+Via REST API (`apirest.md:398-424`):
+
+```bash
+# Change active entity
+curl -X POST \
+  -H 'Session-Token: xxx' \
+  -d '{"entities_id": 1, "is_recursive": true}' \
+  'http://glpi/apirest.php/changeActiveEntities'
+```
+
+## Entity Data Isolation
+
+### Item Association
+
+Most items are associated with an entity:
+
+```php
+// Computers, tickets, users, etc.
+'entities_id'    // Primary entity
+'is_recursive'   // Visible to sub-entities?
+```
+
+### Visibility Rules
+
+An item is visible to a user if:
+1. Item's entity is in user's accessible entities list
+2. OR item is recursive AND user has access to a parent entity
+
+```php
+// Check from any CommonDBTM object
+Session::haveAccessToEntity($item->fields['entities_id']);
+```
+
+## Entity Management
+
+### Creating Entities
+
+<Accordion title="Via Web Interface">
+
+1. Navigate to **Setup** > **Dropdowns** > **Entities**
+2. Click **Add** to create a new entity
+3. Configure:
+   - Parent entity (if not root level)
+   - Name and description
+   - Address and contact information
+4. Set entity-specific configurations in tabs
+
+</Accordion>
+
+<Accordion title="Via API">
+
+```bash
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H 'Session-Token: xxx' \
+  -d '{"input": {"name": "New Department", "entities_id": 0}}' \
+  'http://glpi/apirest.php/Entity/'
+```
+
+</Accordion>
+
+### Entity Rights Required
+
+```php
+// From inc/entity.class.php:163-167
+public function canCreateItem() {
+    return Session::haveRecursiveAccessToEntity(
+        $this->getField('entities_id')
+    );
+}
+```
+
+## Use Cases
+
+### Multi-Site Organization
+
+```
+Root Entity: Company HQ
+├── North America Region
+│   ├── New York Office
+│   ├── Los Angeles Office
+│   └── Toronto Office
+└── Europe Region
+    ├── London Office
+    ├── Paris Office
+    └── Berlin Office
+```
+
+### Department-Based Structure
+
+```
+Root Entity: Global IT
+├── IT Operations
+│   ├── Infrastructure
+│   ├── Network
+│   └── Security
+├── IT Support
+│   ├── Level 1 Helpdesk
+│   └── Level 2 Support
+└── Development
+    ├── Frontend Team
+    └── Backend Team
+```
+
+### Client/Customer Management (MSP)
+
+```
+Root Entity: MSP Company
+├── Client A
+│   ├── Client A - Site 1
+│   └── Client A - Site 2
+└── Client B
+    └── Client B - Main Office
+```
+
+<Note>
+Each client can have completely isolated data, configurations, and user access.
+</Note>
+
+## Best Practices
+
+### Planning Your Hierarchy
+
+1. **Start Simple**: Begin with a basic structure
+2. **Match Organization**: Mirror your real organizational structure
+3. **Plan for Growth**: Leave room for expansion
+4. **Consider Access**: Think about who needs access to what
+
+### Entity Naming
+
+- Use clear, descriptive names
+- Include location codes if managing multiple sites
+- Maintain consistent naming conventions
+
+### Configuration Management
+
+- Set common configurations at the root level
+- Override only when necessary for specific entities
+- Document entity-specific customizations
+
+<Warning>
+Deleting an entity is restricted and requires careful consideration. The root entity (ID: 0) cannot be deleted.
+</Warning>
+
+<Info>
+Entities are fundamental to ITSM-NG's multi-tenant capabilities, enabling complete data and configuration separation when needed.
+</Info>

@@ -1,0 +1,114 @@
+---
+title: Initialize Session
+description: Request a session token to use other API endpoints
+---
+
+Initialize a new API session and receive a session token for authentication.
+
+## Endpoint
+
+```
+GET /apirest.php/initSession/
+```
+
+## Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+<ParamField header="Authorization" type="string" required>
+  Authentication method. Use one of:
+  - Basic authentication: `Basic base64({login}:{password})`
+  - User token: `user_token {your_user_token}`
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Authorization string provided by the GLPI API configuration. Required if configured in GLPI.
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="get_full_session" type="boolean" default="false">
+  Get the full session data. Useful if you want to login and access session data in one request.
+</ParamField>
+
+## Response
+
+<ResponseField name="session_token" type="string" required>
+  The session token to use for subsequent API requests
+</ResponseField>
+
+<ResponseField name="session" type="object">
+  Full session data (only when `get_full_session=true`)
+  
+  <expandable title="properties">
+    <ResponseField name="glpi_plugins" type="object">
+      Installed plugins data
+    </ResponseField>
+    
+    <ResponseField name="glpicookietest" type="string">
+      Cookie test value
+    </ResponseField>
+    
+    <ResponseField name="glpicsrftokens" type="object">
+      CSRF tokens
+    </ResponseField>
+  </expandable>
+</ResponseField>
+
+## Examples
+
+### Basic Authentication
+
+```bash
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Basic Z2xwaTpnbHBp" \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  'http://path/to/glpi/apirest.php/initSession'
+```
+
+**Response:**
+
+```json
+{
+  "session_token": "83af7e620c83a50a18d3eac2f6ed05a3ca0bea62"
+}
+```
+
+### User Token with Full Session
+
+```bash
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: user_token q56hqkniwot8wntb3z1qarka5atf365taaa2uyjrn" \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  'http://path/to/glpi/apirest.php/initSession?get_full_session=true'
+```
+
+**Response:**
+
+```json
+{
+  "session_token": "83af7e620c83a50a18d3eac2f6ed05a3ca0bea62",
+  "session": {
+    "glpi_plugins": {},
+    "glpicookietest": "...",
+    "glpicsrftokens": {}
+  }
+}
+```
+
+## Status Codes
+
+- `200 OK` - Session initialized successfully
+- `400 Bad Request` - Error in input parameters
+- `401 Unauthorized` - Invalid credentials or user token
+
+## Notes
+
+- You can provide authentication via HTTP Basic Auth (login/password) or user token
+- User tokens can be found in User Preferences under 'Remote access key'
+- The session token must be included in all subsequent API requests via the `Session-Token` header
+- Session tokens are used to maintain read-only sessions by default for parallel API calls

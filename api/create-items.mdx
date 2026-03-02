@@ -1,0 +1,396 @@
+---
+title: POST Operations
+description: Create new items and upload files to ITSM-NG using POST requests
+---
+
+The ITSM-NG REST API allows you to create new items using POST requests. You can add single items, multiple items in bulk, or upload files.
+
+## Add Item(s)
+
+Create one or more items in ITSM-NG.
+
+### Endpoint
+
+```
+POST /apirest.php/:itemtype/
+```
+
+### Headers
+
+<ParamField header="Session-Token" type="string" required>
+  Session token obtained from [initSession](/api/init-session)
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Optional authorization string from API configuration
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json` for regular requests or `multipart/form-data` for file uploads
+</ParamField>
+
+### Request Body
+
+<ParamField body="input" type="object | array" required>
+  For single item: an object with fields of the itemtype to be inserted
+  
+  For multiple items: an array of objects, each containing fields for one item
+</ParamField>
+
+### Response
+
+<ResponseField name="id" type="integer">
+  The ID of the created item (for single item creation)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message about the operation
+</ResponseField>
+
+For bulk operations, returns an array of objects with `id` and `message` for each item.
+
+### Response Headers
+
+- **Location**: URL of the created item (single item creation)
+- **Link**: URLs of created items (bulk creation)
+
+### Response Codes
+
+- `201 Created` - Item(s) created successfully
+- `207 Multi-Status` - Bulk operation with some failures
+- `400 Bad Request` - Invalid input parameters
+- `401 Unauthorized` - Invalid or missing session token
+
+---
+
+## Create Single Item
+
+Add a single item to the system.
+
+### Example Request
+
+```bash
+curl -X POST \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+-d '{"input": {"name": "My single computer", "serial": "12345"}}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```
+
+### Example Response
+
+```json
+{
+  "id": 15
+}
+```
+
+Response headers:
+```
+HTTP/1.1 201 Created
+Location: http://path/to/glpi/api/Computer/15
+```
+
+---
+
+## Create Multiple Items (Bulk)
+
+Add multiple items in a single request.
+
+### Example Request
+
+```bash
+curl -X POST \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+-d '{"input": [
+  {"name": "My first computer", "serial": "12345"},
+  {"name": "My 2nd computer", "serial": "67890"},
+  {"name": "My 3rd computer", "serial": "qsd12sd"}
+]}' \
+'http://path/to/glpi/apirest.php/Computer/'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": 8,
+    "message": ""
+  },
+  {
+    "id": false,
+    "message": "You don't have permission to perform this action."
+  },
+  {
+    "id": 9,
+    "message": ""
+  }
+]
+```
+
+Response headers:
+```
+HTTP/1.1 207 Multi-Status
+Link: http://path/to/glpi/api/Computer/8,http://path/to/glpi/api/Computer/9
+```
+
+<Note>
+  When creating multiple items, the API returns a 207 Multi-Status response. Each item in the response array corresponds to the item at the same index in your request. Items with `"id": false` indicate creation failures.
+</Note>
+
+---
+
+## Upload a Document File
+
+Upload files by creating Document items with file attachments.
+
+### Special Requirements
+
+<Warning>
+  File uploads require `multipart/form-data` content type. Input data must be sent in an `uploadManifest` parameter using JSON format.
+</Warning>
+
+### Endpoint
+
+```
+POST /apirest.php/Document/
+```
+
+### Headers
+
+<ParamField header="Session-Token" type="string" required>
+  Session token obtained from initSession
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Optional authorization string from API configuration
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `multipart/form-data`
+</ParamField>
+
+### Form Data Parameters
+
+<ParamField body="uploadManifest" type="string" required>
+  JSON string containing the input data with:
+  - `name` - Document name
+  - `_filename` - Array of filenames being uploaded
+</ParamField>
+
+<ParamField body="filename[0]" type="file" required>
+  The file to upload. Use array notation for multiple files: `filename[0]`, `filename[1]`, etc.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST \
+-H 'Content-Type: multipart/form-data' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+-F 'uploadManifest={"input": {"name": "Uploaded document", "_filename" : ["file.txt"]}};type=application/json' \
+-F 'filename[0]=@file.txt' \
+'http://path/to/glpi/apirest.php/Document/'
+```
+
+### Example Response
+
+```json
+{
+  "id": 1,
+  "message": "Document move succeeded.",
+  "upload_result": {
+    "filename": "file.txt",
+    "size": 1024,
+    "mime": "text/plain"
+  }
+}
+```
+
+Response headers:
+```
+HTTP/1.1 201 Created
+Location: http://path/to/glpi/api/Document/1
+```
+
+### Upload Multiple Files
+
+To upload multiple files in one document:
+
+```bash
+curl -X POST \
+-H 'Content-Type: multipart/form-data' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-F 'uploadManifest={"input": {"name": "Multi-file document", "_filename": ["file1.txt", "file2.pdf"]}};type=application/json' \
+-F 'filename[0]=@file1.txt' \
+-F 'filename[1]=@file2.pdf' \
+'http://path/to/glpi/apirest.php/Document/'
+```
+
+---
+
+## Common Item Fields
+
+Most itemtypes support these common fields:
+
+### Standard Fields
+
+<ParamField body="name" type="string">
+  The name or title of the item
+</ParamField>
+
+<ParamField body="comment" type="string">
+  Additional comments or description
+</ParamField>
+
+<ParamField body="entities_id" type="integer">
+  The entity ID this item belongs to
+</ParamField>
+
+<ParamField body="is_recursive" type="boolean" default={false}>
+  Whether the item applies to sub-entities
+</ParamField>
+
+<ParamField body="is_deleted" type="boolean" default={false}>
+  Soft delete flag
+</ParamField>
+
+### Asset-Specific Fields
+
+For asset types (Computer, Monitor, Printer, etc.):
+
+<ParamField body="serial" type="string">
+  Serial number
+</ParamField>
+
+<ParamField body="otherserial" type="string">
+  Inventory number or alternative serial
+</ParamField>
+
+<ParamField body="contact" type="string">
+  Contact person
+</ParamField>
+
+<ParamField body="contact_num" type="string">
+  Contact number
+</ParamField>
+
+<ParamField body="users_id_tech" type="integer">
+  Technical manager user ID
+</ParamField>
+
+<ParamField body="groups_id_tech" type="integer">
+  Technical manager group ID
+</ParamField>
+
+<ParamField body="locations_id" type="integer">
+  Location ID
+</ParamField>
+
+<ParamField body="manufacturers_id" type="integer">
+  Manufacturer ID
+</ParamField>
+
+<ParamField body="states_id" type="integer">
+  State ID (e.g., Production, Stock)
+</ParamField>
+
+### ITIL Item Fields
+
+For Ticket, Problem, and Change itemtypes:
+
+<ParamField body="content" type="string">
+  Description or content of the ITIL item
+</ParamField>
+
+<ParamField body="priority" type="integer">
+  Priority level (1-5)
+</ParamField>
+
+<ParamField body="urgency" type="integer">
+  Urgency level (1-5)
+</ParamField>
+
+<ParamField body="impact" type="integer">
+  Impact level (1-5)
+</ParamField>
+
+<ParamField body="status" type="integer">
+  Status ID
+</ParamField>
+
+<ParamField body="requesttypes_id" type="integer">
+  Request type ID (source of the request)
+</ParamField>
+
+<ParamField body="_users_id_requester" type="integer">
+  Requester user ID (use underscore prefix for actors)
+</ParamField>
+
+<ParamField body="_users_id_assign" type="integer">
+  Assigned technician user ID
+</ParamField>
+
+<ParamField body="_groups_id_assign" type="integer">
+  Assigned group ID
+</ParamField>
+
+---
+
+## Error Handling
+
+### Common Errors
+
+<ResponseField name="ERROR_GLPI_ADD" type="error">
+  Unable to add the item. Check GLPI logs for details.
+</ResponseField>
+
+<ResponseField name="ERROR_GLPI_PARTIAL_ADD" type="error">
+  Some items in bulk operation failed. Check the response array for details on each item.
+</ResponseField>
+
+<ResponseField name="ERROR_RIGHT_MISSING" type="error">
+  User lacks permission to create items of this type.
+</ResponseField>
+
+<ResponseField name="ERROR_BAD_ARRAY" type="error">
+  The input must be an object (single item) or array of objects (multiple items).
+</ResponseField>
+
+### Validation Errors
+
+When creating items, validation may fail for:
+
+- **Missing required fields**: Each itemtype has mandatory fields
+- **Invalid foreign keys**: Referenced IDs must exist (e.g., entities_id, users_id)
+- **Duplicate values**: Unique constraints on certain fields
+- **Permission issues**: User profile must have create rights
+
+---
+
+## Best Practices
+
+<Tip>
+  **Bulk Operations**: When creating multiple items, use bulk creation instead of individual requests to reduce overhead and improve performance.
+</Tip>
+
+<Tip>
+  **Field Validation**: Validate required fields client-side before sending requests to avoid unnecessary API calls.
+</Tip>
+
+<Tip>
+  **Entity Context**: Always specify `entities_id` to ensure items are created in the correct organizational context.
+</Tip>
+
+<Warning>
+  **Session Write Mode**: Creating items requires write access to the session. By default, sessions are read-only. The API automatically enables write mode for POST operations, but parallel requests may be blocked.
+</Warning>
+
+<Note>
+  **File Size Limits**: File uploads are subject to PHP and web server limits. Check your `upload_max_filesize` and `post_max_size` settings.
+</Note>

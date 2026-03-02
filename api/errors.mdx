@@ -1,0 +1,690 @@
+---
+title: Error Codes & Handling
+description: Complete reference of ITSM-NG API error codes and how to handle them
+---
+
+The ITSM-NG API uses standard HTTP status codes along with custom error codes to indicate the success or failure of requests.
+
+## Error Response Format
+
+All API errors return a JSON array with two elements:
+
+```json
+[
+  "ERROR_CODE",
+  "Human readable error message; view documentation in your browser at http://your-domain/api/#ERROR_CODE"
+]
+```
+
+### Example Error Response
+
+```json
+[
+  "ERROR_SESSION_TOKEN_MISSING",
+  "parameter session_token is missing or empty; view documentation in your browser at http://your-domain/api/#ERROR_SESSION_TOKEN_MISSING"
+]
+```
+
+## HTTP Status Codes
+
+The API uses standard HTTP status codes:
+
+| Code | Status | Meaning |
+|------|--------|----------|
+| 200 | OK | Request succeeded |
+| 201 | Created | Resource created successfully |
+| 204 | No Content | Request succeeded with no response body |
+| 206 | Partial Content | Partial data returned (pagination) |
+| 207 | Multi-Status | Batch operation with mixed results |
+| 400 | Bad Request | Invalid request parameters |
+| 401 | Unauthorized | Authentication failed |
+| 403 | Forbidden | Insufficient permissions |
+| 404 | Not Found | Resource not found |
+| 405 | Method Not Allowed | HTTP method not supported |
+| 500 | Internal Server Error | Server error occurred |
+
+## Authentication Errors
+
+### ERROR_LOGIN_PARAMETERS_MISSING
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Missing required login parameters
+
+**Cause**: Neither username/password nor user_token was provided to initSession
+
+**Solution**:
+```bash
+# Provide Basic Auth credentials
+curl -X GET \
+  -H "Authorization: Basic $(echo -n 'user:pass' | base64)" \
+  'http://your-domain/apirest.php/initSession'
+
+# OR provide user_token
+curl -X GET \
+  -H "Authorization: user_token YOUR_TOKEN" \
+  'http://your-domain/apirest.php/initSession'
+```
+
+### ERROR_LOGIN_WITH_CREDENTIALS_DISABLED
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Login with username/password is disabled in configuration
+
+**Cause**: ITSM-NG is configured to only allow user_token authentication
+
+**Solution**: Use user_token instead of credentials:
+```bash
+curl -X GET \
+  -H "Authorization: user_token q56hqkniwot8wntb3z1qarka5atf365taaa2uyjrn" \
+  'http://your-domain/apirest.php/initSession'
+```
+
+### ERROR_GLPI_LOGIN_USER_TOKEN
+
+**HTTP Code**: 401 Unauthorized
+
+**Description**: The provided user_token is invalid
+
+**Cause**: User token doesn't exist or has been regenerated
+
+**Solution**:
+1. Log into ITSM-NG web interface
+2. Go to **My Settings > Remote access key**
+3. Copy the current token or generate a new one
+4. Update your API client with the correct token
+
+### ERROR_GLPI_LOGIN
+
+**HTTP Code**: 401 Unauthorized
+
+**Description**: Login failed - generic authentication error
+
+**Possible Causes**:
+- Invalid username or password
+- Account is disabled
+- Account is locked
+- LDAP authentication issues
+
+**Solution**:
+1. Verify credentials are correct
+2. Check user account status in ITSM-NG
+3. Review ITSM-NG logs in `files/_logs/`
+4. Check authentication method configuration
+
+### ERROR_SESSION_TOKEN_MISSING
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Session token is missing or empty
+
+**Cause**: Request requires authentication but no Session-Token header was provided
+
+**Solution**: Include Session-Token in all requests after initSession:
+```bash
+curl -X GET \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  'http://your-domain/apirest.php/Computer/71'
+```
+
+### ERROR_SESSION_TOKEN_INVALID
+
+**HTTP Code**: 401 Unauthorized
+
+**Description**: Session token is invalid or expired
+
+**Possible Causes**:
+- Session was terminated
+- Token is malformed
+- Session expired
+- Using token from different session
+
+**Solution**: Initialize a new session:
+```bash
+# Get new session token
+curl -X GET \
+  -H "Authorization: Basic $(echo -n 'user:pass' | base64)" \
+  'http://your-domain/apirest.php/initSession'
+```
+
+## Authorization Errors
+
+### ERROR_APP_TOKEN_PARAMETERS_MISSING
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: App-Token is required but not provided
+
+**Cause**: API client configuration requires App-Token
+
+**Solution**: Include App-Token header:
+```bash
+curl -X GET \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  'http://your-domain/apirest.php/initSession'
+```
+
+### ERROR_WRONG_APP_TOKEN_PARAMETER
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: App-Token doesn't match configuration
+
+**Cause**: Provided App-Token doesn't exist in ITSM-NG
+
+**Solution**:
+1. Navigate to **Setup > General > API** in ITSM-NG
+2. Check API client configuration
+3. Copy the correct App-Token
+4. Update your API client
+
+### ERROR_NOT_ALLOWED_IP
+
+**HTTP Code**: 400 Bad Request (returned as false)
+
+**Description**: Client IP address is not authorized
+
+**Cause**: Your IP is not in the allowed range for any active API client
+
+**Solution**:
+1. Check your current IP address
+2. In ITSM-NG, go to **Setup > General > API**
+3. Add your IP to an API client's allowed range:
+   - IPv4: Configure start and end range
+   - IPv6: Add specific address
+4. Ensure API client is active
+
+### ERROR_RIGHT_MISSING
+
+**HTTP Code**: 403 Forbidden
+
+**Description**: User doesn't have permission for this action
+
+**Cause**: Current user's profile lacks required rights
+
+**Solution**:
+1. Check user profile permissions in ITSM-NG
+2. Grant necessary rights (READ, CREATE, UPDATE, DELETE, PURGE)
+3. Or switch to a profile with appropriate permissions:
+```bash
+curl -X POST \
+  -H "Session-Token: YOUR_TOKEN" \
+  -d '{"profiles_id": 4}' \
+  'http://your-domain/apirest.php/changeActiveProfile'
+```
+
+## Resource Errors
+
+### ERROR_ITEM_NOT_FOUND
+
+**HTTP Code**: 404 Not Found
+
+**Description**: Requested item doesn't exist
+
+**Cause**: 
+- Item ID doesn't exist
+- Item was deleted
+- User doesn't have access to the entity
+
+**Solution**:
+1. Verify the item ID
+2. Check if item exists in the database
+3. Ensure active entity includes the item's entity
+4. Try searching instead of direct access:
+```bash
+curl -X GET \
+  -H "Session-Token: YOUR_TOKEN" \
+  'http://your-domain/apirest.php/search/Computer?criteria[0][field]=2&criteria[0][searchtype]=contains&criteria[0][value]=server'
+```
+
+### ERROR_RESOURCE_NOT_FOUND_NOR_COMMONDBTM
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Requested itemtype is not valid
+
+**Cause**: 
+- Itemtype doesn't exist
+- Itemtype is not a valid GLPI class
+- Typo in itemtype name
+
+**Solution**:
+1. Check itemtype spelling (case-sensitive)
+2. Ensure itemtype inherits from CommonDBTM
+3. Valid examples: `Computer`, `Ticket`, `User`, `Monitor`
+
+### ERROR_RESOURCE_MISSING
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: No resource specified in request
+
+**Cause**: Empty or missing endpoint path
+
+**Solution**: Specify a valid endpoint:
+```bash
+# Wrong
+http://your-domain/apirest.php/
+
+# Correct
+http://your-domain/apirest.php/Computer/71
+```
+
+### ERROR_METHOD_NOT_ALLOWED
+
+**HTTP Code**: 405 Method Not Allowed
+
+**Description**: HTTP method not supported for this endpoint
+
+**Cause**: Using wrong HTTP method (e.g., DELETE on initSession)
+
+**Solution**: Use correct HTTP method:
+- GET: Retrieve data
+- POST: Create items
+- PUT/PATCH: Update items
+- DELETE: Delete items
+
+## Input Errors
+
+### ERROR_BAD_ARRAY
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Input must be an array of objects
+
+**Cause**: Invalid input format in request body
+
+**Solution**: Provide proper JSON format:
+```bash
+# Single item
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"input": {"name": "My Computer", "serial": "12345"}}' \
+  'http://your-domain/apirest.php/Computer/'
+
+# Multiple items
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"input": [{"name": "Computer 1"}, {"name": "Computer 2"}]}' \
+  'http://your-domain/apirest.php/Computer/'
+```
+
+### ERROR_JSON_PAYLOAD_FORBIDDEN
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: GET requests cannot have a request body
+
+**Cause**: Sending JSON payload with GET request
+
+**Solution**: Use query parameters for GET requests:
+```bash
+# Wrong
+curl -X GET -d '{"range": "0-10"}' ...
+
+# Correct
+curl -X GET '...?range=0-10'
+```
+
+### ERROR_JSON_PAYLOAD_INVALID
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: JSON payload is malformed
+
+**Cause**: Invalid JSON syntax
+
+**Solution**: Validate JSON before sending:
+```bash
+# Use proper JSON formatting
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "input": {
+      "name": "Valid JSON",
+      "serial": "ABC123"
+    }
+  }' \
+  'http://your-domain/apirest.php/Computer/'
+```
+
+## Data Operation Errors
+
+### ERROR_GLPI_ADD
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Failed to create item
+
+**Possible Causes**:
+- Missing required fields
+- Invalid field values
+- Foreign key constraints
+- Duplicate unique fields
+
+**Solution**:
+1. Check ITSM-NG logs for specific error
+2. Verify all required fields are provided
+3. Validate field values and types
+4. Check entity permissions
+
+### ERROR_GLPI_PARTIAL_ADD
+
+**HTTP Code**: 207 Multi-Status
+
+**Description**: Some items in batch creation failed
+
+**Response includes**: Array with success/failure status for each item
+
+**Example Response**:
+```json
+[
+  {"id": 8, "message": ""},
+  {"id": false, "message": "You don't have permission to perform this action."},
+  {"id": 9, "message": ""}
+]
+```
+
+**Solution**: Review response to identify which items failed and why
+
+### ERROR_GLPI_UPDATE
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Failed to update item
+
+**Possible Causes**:
+- Item not found
+- Invalid field values
+- Locked item
+- Missing required fields
+
+**Solution**:
+1. Verify item ID exists
+2. Check field values are valid
+3. Ensure item is not locked
+4. Review ITSM-NG logs
+
+### ERROR_GLPI_PARTIAL_UPDATE
+
+**HTTP Code**: 207 Multi-Status
+
+**Description**: Some items in batch update failed
+
+**Response includes**: Array with success/failure status for each item
+
+**Solution**: Review response to identify which items failed
+
+### ERROR_GLPI_DELETE
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Failed to delete item
+
+**Possible Causes**:
+- Item not found
+- Item cannot be deleted (referenced elsewhere)
+- Insufficient permissions
+
+**Solution**: Check if `force_purge` is needed:
+```bash
+curl -X DELETE \
+  -H "Session-Token: YOUR_TOKEN" \
+  'http://your-domain/apirest.php/Computer/71?force_purge=true'
+```
+
+### ERROR_GLPI_PARTIAL_DELETE
+
+**HTTP Code**: 207 Multi-Status
+
+**Description**: Some items in batch deletion failed
+
+**Response includes**: Array with success/failure status for each item
+
+### ERROR_NOT_DELETED
+
+**HTTP Code**: varies
+
+**Description**: Item must be moved to trash before purging
+
+**Solution**: Delete item first, then purge:
+```bash
+# 1. Move to trash
+curl -X DELETE \
+  -d '{"input": {"id": 71}}' \
+  'http://your-domain/apirest.php/Computer/'
+
+# 2. Purge from trash
+curl -X DELETE \
+  -d '{"input": {"id": 71}, "force_purge": true}' \
+  'http://your-domain/apirest.php/Computer/'
+```
+
+## Search & Query Errors
+
+### ERROR_SQL
+
+**HTTP Code**: 500 Internal Server Error
+
+**Description**: SQL error occurred
+
+**Cause**: Database query failed
+
+**Solution**:
+1. Check ITSM-NG logs in `files/_logs/`
+2. Verify database connection
+3. Check for corrupted data
+4. Review search criteria syntax
+
+### ERROR_RANGE_EXCEED_TOTAL
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Requested range exceeds available data
+
+**Cause**: Range start is greater than total count
+
+**Example**: Requesting `range=500-550` when only 200 items exist
+
+**Solution**: Check total count first:
+```bash
+# Response includes totalcount
+curl -X GET 'http://your-domain/apirest.php/Computer/'
+# Content-Range: 0-50/200
+
+# Adjust range accordingly
+curl -X GET 'http://your-domain/apirest.php/Computer/?range=0-199'
+```
+
+## File Upload Errors
+
+### ERROR_UPLOAD_FILE_TOO_BIG_POST_MAX_SIZE
+
+**HTTP Code**: 400 Bad Request
+
+**Description**: Uploaded file exceeds server limits
+
+**Cause**: File size exceeds `post_max_size` or `upload_max_filesize` in PHP configuration
+
+**Solution**:
+1. Check current limits: `php -i | grep -E 'post_max_size|upload_max_filesize'`
+2. Increase in `php.ini`:
+   ```ini
+   upload_max_filesize = 50M
+   post_max_size = 50M
+   ```
+3. Restart web server
+4. Or split large files into smaller chunks
+
+## Error Handling Best Practices
+
+<AccordionGroup>
+  <Accordion title="1. Always Check HTTP Status Codes">
+    ```javascript
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      console.error(`Error ${response.status}: ${error[0]}`);
+      console.error(`Message: ${error[1]}`);
+      throw new Error(error[1]);
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="2. Implement Retry Logic">
+    ```python
+    import time
+    import requests
+    
+    def api_call_with_retry(url, max_retries=3):
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.HTTPError as e:
+                if response.status_code == 401:
+                    # Re-authenticate
+                    session_token = init_session()
+                    # Retry with new token
+                elif response.status_code >= 500:
+                    # Server error - retry with backoff
+                    time.sleep(2 ** attempt)
+                else:
+                    # Client error - don't retry
+                    raise
+        raise Exception("Max retries exceeded")
+    ```
+  </Accordion>
+
+  <Accordion title="3. Log Errors Appropriately">
+    ```bash
+    #!/bin/bash
+    
+    LOG_FILE="api_errors.log"
+    
+    response=$(curl -s -w "\n%{http_code}" -X GET \
+      -H "Session-Token: $TOKEN" \
+      "$URL")
+    
+    http_code=$(echo "$response" | tail -n1)
+    body=$(echo "$response" | sed '$d')
+    
+    if [ $http_code -ne 200 ]; then
+      echo "$(date): HTTP $http_code - $body" >> $LOG_FILE
+      exit 1
+    fi
+    ```
+  </Accordion>
+
+  <Accordion title="4. Handle Batch Operation Results">
+    ```php
+    <?php
+    // Batch create response
+    $results = [
+      ["id" => 8, "message" => ""],
+      ["id" => false, "message" => "Permission denied"],
+      ["id" => 9, "message" => ""]
+    ];
+    
+    $successful = [];
+    $failed = [];
+    
+    foreach ($results as $index => $result) {
+      if ($result['id'] !== false) {
+        $successful[] = $result['id'];
+      } else {
+        $failed[$index] = $result['message'];
+      }
+    }
+    
+    echo "Created: " . count($successful) . " items\n";
+    echo "Failed: " . count($failed) . " items\n";
+    
+    if (!empty($failed)) {
+      foreach ($failed as $index => $message) {
+        echo "Item $index failed: $message\n";
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="5. Validate Input Before Sending">
+    ```javascript
+    function validateComputerInput(data) {
+      const required = ['name'];
+      const errors = [];
+      
+      // Check required fields
+      required.forEach(field => {
+        if (!data[field]) {
+          errors.push(`Missing required field: ${field}`);
+        }
+      });
+      
+      // Validate data types
+      if (data.serial && typeof data.serial !== 'string') {
+        errors.push('Serial must be a string');
+      }
+      
+      if (errors.length > 0) {
+        throw new Error(errors.join(', '));
+      }
+      
+      return true;
+    }
+    
+    // Usage
+    try {
+      validateComputerInput(inputData);
+      const response = await createComputer(inputData);
+    } catch (error) {
+      console.error('Validation failed:', error.message);
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Complete Error Code Reference
+
+| Error Code | HTTP | Description |
+|------------|------|-------------|
+| ERROR_ITEM_NOT_FOUND | 404 | Resource not found |
+| ERROR_BAD_ARRAY | 400 | Invalid input array |
+| ERROR_METHOD_NOT_ALLOWED | 405 | HTTP method not allowed |
+| ERROR_RIGHT_MISSING | 403 | Insufficient permissions |
+| ERROR_SESSION_TOKEN_INVALID | 401 | Invalid session token |
+| ERROR_SESSION_TOKEN_MISSING | 400 | Missing session token |
+| ERROR_APP_TOKEN_PARAMETERS_MISSING | 400 | Missing app token |
+| ERROR_WRONG_APP_TOKEN_PARAMETER | 400 | Invalid app token |
+| ERROR_NOT_ALLOWED_IP | 400 | IP not authorized |
+| ERROR_LOGIN_PARAMETERS_MISSING | 400 | Missing login parameters |
+| ERROR_LOGIN_WITH_CREDENTIALS_DISABLED | 400 | Credential login disabled |
+| ERROR_GLPI_LOGIN_USER_TOKEN | 401 | Invalid user token |
+| ERROR_GLPI_LOGIN | 401 | Login failed |
+| ERROR_RESOURCE_NOT_FOUND_NOR_COMMONDBTM | 400 | Invalid itemtype |
+| ERROR_RESOURCE_MISSING | 400 | Missing resource |
+| ERROR_SQL | 500 | SQL error |
+| ERROR_RANGE_EXCEED_TOTAL | 400 | Range exceeds total |
+| ERROR_GLPI_ADD | 400 | Create failed |
+| ERROR_GLPI_PARTIAL_ADD | 207 | Partial create |
+| ERROR_GLPI_UPDATE | 400 | Update failed |
+| ERROR_GLPI_PARTIAL_UPDATE | 207 | Partial update |
+| ERROR_GLPI_DELETE | 400 | Delete failed |
+| ERROR_GLPI_PARTIAL_DELETE | 207 | Partial delete |
+| ERROR_NOT_DELETED | varies | Item not in trash |
+| ERROR_JSON_PAYLOAD_FORBIDDEN | 400 | GET with body |
+| ERROR_JSON_PAYLOAD_INVALID | 400 | Invalid JSON |
+| ERROR_UPLOAD_FILE_TOO_BIG_POST_MAX_SIZE | 400 | File too large |
+
+## Getting Help
+
+If you encounter errors not covered here:
+
+1. **Check ITSM-NG Logs**: Located in `files/_logs/`
+2. **Enable Debug Mode**: Add `?debug=1` or `?debug=2` to requests
+3. **Review SQL Logs**: Enable SQL logging in debug mode
+4. **Consult Documentation**: Visit the inline API docs at `/apirest.php/`
+5. **Community Support**: Check ITSM-NG forums and GitHub issues

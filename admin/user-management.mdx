@@ -1,0 +1,392 @@
+---
+title: User Administration
+description: Manage users, profiles, and access rights in ITSM-NG
+---
+
+## Overview
+
+User management in ITSM-NG handles user accounts, authentication, profiles, and permissions across entities.
+
+## Creating Users
+
+<Steps>
+  <Step title="Navigate to users">
+    Go to **Administration > Users** in the main menu.
+  </Step>
+  
+  <Step title="Add new user">
+    Click **Add** to create a new user account.
+  </Step>
+  
+  <Step title="Enter user details">
+    Fill in the required information:
+    - **Login**: Unique username (required)
+    - **First name**: User's first name
+    - **Surname**: User's last name
+    - **Email**: Primary email address
+    - **Password**: Set initial password (for local authentication)
+  </Step>
+  
+  <Step title="Set authentication">
+    Choose the authentication type:
+    - **Local database**: ITSM-NG authentication
+    - **LDAP directory**: External LDAP authentication
+    - **Email server**: Email-based authentication
+    - **External**: SSO or other external authentication
+  </Step>
+  
+  <Step title="Assign profile and entity">
+    - **Profile**: Select the user's role (e.g., Technician, Admin)
+    - **Entity**: Choose the entity
+    - **Recursive**: Check to include child entities
+  </Step>
+  
+  <Step title="Save user">
+    Click **Add** to create the user account.
+  </Step>
+</Steps>
+
+<Warning>
+The login name must be valid according to authentication rules and cannot be changed after creation for some authentication types.
+</Warning>
+
+## User Profile
+
+### Personal Information
+
+```yaml
+Login: Username (cannot be modified)
+First name: Given name
+Surname: Family name
+Administrative number: Employee/Badge number
+Phone: Contact number
+Phone 2: Alternative phone
+Mobile: Mobile phone number
+Category: User category classification
+Title: Job title
+Language: Preferred interface language
+Location: Physical location
+```
+
+### Authentication Settings
+
+<Steps>
+  <Step title="Authentication type">
+    View or modify (if authorized):
+    - **Type**: Local, LDAP, Mail, External
+    - **Authentication source**: Specific LDAP server (if applicable)
+  </Step>
+  
+  <Step title="Password management">
+    For local users:
+    - Change password (requires current password)
+    - Password must meet complexity requirements
+    - Password expiration tracking
+  </Step>
+  
+  <Step title="Synchronization field">
+    For LDAP users, the sync field uniquely identifies the user.
+  </Step>
+</Steps>
+
+### Multiple Emails
+
+Users can have multiple email addresses:
+
+<Steps>
+  <Step title="Add email">
+    In the user form, add email addresses in the email fields.
+  </Step>
+  
+  <Step title="Set default">
+    Mark one email as default for notifications.
+  </Step>
+  
+  <Step title="Dynamic emails">
+    Emails from LDAP are synchronized automatically and marked as dynamic.
+  </Step>
+</Steps>
+
+## User Preferences
+
+### Interface Customization
+
+```yaml
+Language: Interface language
+Date format: Date display format
+Name format: Firstname/Surname or Surname/Firstname
+Number format: Decimal and thousand separators
+Results per page: 5 to configured maximum
+Timezone: User's timezone for date/time display
+```
+
+### Display Preferences
+
+- **Go to created item**: Navigate to item after creation
+- **Show count on tabs**: Display item counts in tabs
+- **Display counters in menu**: Show numbers in navigation menu
+- **Use flat tree dropdowns**: Display complete names in hierarchical dropdowns
+
+### Remote Access
+
+<Steps>
+  <Step title="Personal token">
+    Generate a personal token for API or CLI access:
+    - Used for authentication in automation scripts
+    - Can be reset if compromised
+  </Step>
+  
+  <Step title="API token">
+    Separate token specifically for REST API access:
+    - Managed independently from personal token
+    - Has its own expiration date
+  </Step>
+</Steps>
+
+<Warning>
+Tokens provide full access to the user's account. Keep them secure and reset immediately if compromised.
+</Warning>
+
+## Profile Assignment
+
+### Assigning Profiles
+
+Users can have multiple profile-entity combinations:
+
+<Steps>
+  <Step title="Access authorizations tab">
+    In the user form, go to the **Authorizations** tab.
+  </Step>
+  
+  <Step title="Add authorization">
+    Click **Add an authorization**:
+    - **Entity**: Select entity
+    - **Profile**: Choose profile
+    - **Recursive**: Include child entities
+  </Step>
+  
+  <Step title="Set default">
+    Mark one profile-entity combination as default.
+  </Step>
+</Steps>
+
+### Dynamic Rights
+
+When using LDAP authentication with rules:
+- Rights are automatically assigned based on LDAP groups
+- Dynamic rights are marked with a special indicator
+- Manual rights can coexist with dynamic rights
+- Dynamic rights are updated on each login
+
+<Note>
+Dynamic rights are determined by rules configured in **Setup > Rules > Rules for assigning authorizations to users**.
+</Note>
+
+## Group Membership
+
+Assign users to groups:
+
+<Steps>
+  <Step title="Access groups tab">
+    Open the user's **Groups** tab.
+  </Step>
+  
+  <Step title="Add to group">
+    Click **Add** and select:
+    - **Group**: Group name
+    - **Manager**: Check if user is a group manager
+    - **Delegate**: Check if user can delegate group rights
+  </Step>
+</Steps>
+
+### LDAP Group Synchronization
+
+For LDAP users:
+- Groups are synchronized automatically based on LDAP attributes
+- Dynamic groups are marked and updated on login
+- Manual group assignments remain separate
+
+See `/inc/user.class.php:1199-1264` for LDAP group synchronization logic.
+
+## User Account States
+
+### Active/Inactive
+
+- **Active**: User can log in and use the system
+- **Inactive**: User account is disabled (cannot log in)
+
+### Valid Dates
+
+```yaml
+Begin date: Account becomes active on this date
+End date: Account becomes inactive after this date
+```
+
+Users outside their valid date range cannot authenticate.
+
+### Deleted
+
+- Deleted users are hidden from normal views
+- Can be restored from the trash
+- Permanent deletion removes the user completely
+
+<Warning>
+Deleting a user does not delete their created tickets or assigned items. These are preserved with historical references.
+</Warning>
+
+## Password Management
+
+### Password Policy
+
+Configured in **Setup > General > Password security policy**:
+
+```yaml
+Minimum length: 8-50 characters
+Complexity requirements:
+  - Uppercase letters
+  - Lowercase letters
+  - Numbers
+  - Special characters
+Password expiration: Days before forced change
+Password history: Prevent reuse of recent passwords
+```
+
+### Password Reset
+
+<Steps>
+  <Step title="User-initiated reset">
+    Users can reset their password via "Forgot password" link if:
+    - Email is configured
+    - Password reset is enabled
+  </Step>
+  
+  <Step title="Admin reset">
+    Administrators can set a new password:
+    - Enter new password twice
+    - User must meet password requirements
+    - Password expiration is reset
+  </Step>
+  
+  <Step title="Force change">
+    Mark password as expired to force change on next login.
+  </Step>
+</Steps>
+
+## User Import and Synchronization
+
+### Manual Import
+
+Import users from authentication sources:
+
+<Steps>
+  <Step title="Access import">
+    Go to **Administration > Users > LDAP directory link**.
+  </Step>
+  
+  <Step title="Search users">
+    - Select LDAP server
+    - Enter search criteria
+    - Search for users
+  </Step>
+  
+  <Step title="Import users">
+    - Select users to import
+    - Choose default profile and entity
+    - Click **Import**
+  </Step>
+</Steps>
+
+### Automatic Synchronization
+
+Configure automatic user import:
+
+<Steps>
+  <Step title="Enable auto-add">
+    In **Setup > Authentication**, check:
+    - **Automatically add users from external source**
+  </Step>
+  
+  <Step title="Configure behavior">
+    Set options:
+    - **Add user without accreditation**: Import users even without profile
+    - **Action when user deleted from LDAP**:
+      - Preserve: Keep account active
+      - Put in trashbin: Mark as deleted
+      - Withdraw rights: Remove dynamic authorizations
+      - Disable: Deactivate account
+      - Disable and withdraw: Combine both
+  </Step>
+</Steps>
+
+See `/inc/authldap.class.php:64-88` for deleted user action constants.
+
+## User Picture Management
+
+### Uploading Picture
+
+<Steps>
+  <Step title="User uploads">
+    Users can upload their own picture in preferences.
+  </Step>
+  
+  <Step title="LDAP synchronization">
+    For LDAP users with configured picture field:
+    - Picture is synchronized from LDAP on login
+    - Stored in `GLPI_PICTURE_DIR/[subdirectory]/[userid]_[hash].jpg`
+    - Thumbnail generated automatically
+  </Step>
+  
+  <Step title="Remove picture">
+    Check **Remove** to delete the current picture.
+  </Step>
+</Steps>
+
+## User Search and Filters
+
+Search for users with advanced criteria:
+
+```yaml
+Name: Login name
+First name: Given name
+Surname: Family name
+Email: Any associated email
+Entity: Specific entity
+Profile: Assigned profile
+Active: Yes/No
+LDAP: LDAP users only
+```
+
+## Best Practices
+
+<Card title="User Management Recommendations">
+  - **Use LDAP when possible**: Centralize user management
+  - **Regular audits**: Review user accounts and rights periodically
+  - **Disable vs delete**: Disable inactive users rather than deleting
+  - **Complex passwords**: Enforce strong password policies
+  - **Default profile**: Set appropriate default profile for auto-created users
+  - **Email validation**: Ensure users have valid email addresses
+  - **Document procedures**: Maintain user lifecycle documentation
+  - **Separation of duties**: Don't assign excessive rights
+</Card>
+
+## Troubleshooting
+
+### Cannot Login
+
+Check:
+- Account is active (`is_active = 1`)
+- Account is not deleted (`is_deleted = 0`)
+- Current date is within valid date range
+- Password is correct and not expired
+- User has at least one profile-entity assignment
+
+### LDAP Synchronization Issues
+
+Verify:
+- LDAP server is configured and accessible
+- User exists in LDAP directory
+- LDAP attributes are mapped correctly
+- Synchronization field matches LDAP attribute
+- User DN is correct
+
+See `/inc/user.class.php:1274-1352` for LDAP photo synchronization implementation.

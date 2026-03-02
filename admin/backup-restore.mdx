@@ -1,0 +1,535 @@
+---
+title: Backup and Restore Procedures
+description: Best practices for backing up and restoring ITSM-NG data and configuration
+---
+
+## Overview
+
+Regular backups are critical for disaster recovery, data protection, and migration. ITSM-NG requires backing up both the database and file system components.
+
+## What to Backup
+
+### Database
+
+The MySQL/MariaDB database contains:
+- All configuration data
+- User accounts and permissions
+- Tickets, changes, and problems
+- Assets and inventory
+- Historical data and logs
+
+### File System
+
+<Steps>
+  <Step title="Core files">
+    ITSM-NG installation directory:
+    ```bash
+    /var/www/html/itsm-ng/
+    ```
+  </Step>
+  
+  <Step title="Configuration file">
+    Database connection and settings:
+    ```bash
+    /var/www/html/itsm-ng/config/config_db.php
+    ```
+  </Step>
+  
+  <Step title="Uploaded files">
+    Documents and attachments:
+    ```bash
+    /var/www/html/itsm-ng/files/
+    ```
+  </Step>
+  
+  <Step title="Plugins">
+    Installed plugins:
+    ```bash
+    /var/www/html/itsm-ng/plugins/
+    /var/www/html/itsm-ng/marketplace/
+    ```
+  </Step>
+  
+  <Step title="Pictures">
+    User photos and images:
+    ```bash
+    /var/www/html/itsm-ng/files/_pictures/
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+Never backup the vendor directory or cache files. These should be regenerated using composer.
+</Warning>
+
+## Database Backup
+
+### Using mysqldump
+
+#### Basic Backup
+
+```bash
+# Backup entire database
+mysqldump -u glpi -p glpi > itsm-ng-backup-$(date +%Y%m%d).sql
+
+# Backup with compression
+mysqldump -u glpi -p glpi | gzip > itsm-ng-backup-$(date +%Y%m%d).sql.gz
+```
+
+#### Complete Backup with Options
+
+```bash
+mysqldump \
+  --user=glpi \
+  --password \
+  --single-transaction \
+  --routines \
+  --triggers \
+  --events \
+  --compress \
+  glpi > itsm-ng-backup-$(date +%Y%m%d).sql
+```
+
+Options explained:
+- `--single-transaction`: Consistent backup without locking tables
+- `--routines`: Include stored procedures
+- `--triggers`: Include triggers
+- `--events`: Include scheduled events
+- `--compress`: Compress data between client and server
+
+### Using MySQL Workbench
+
+<Steps>
+  <Step title="Connect to server">
+    Open MySQL Workbench and connect to your database server.
+  </Step>
+  
+  <Step title="Access data export">
+    Navigate to **Server > Data Export**.
+  </Step>
+  
+  <Step title="Select database">
+    Check the ITSM-NG database (usually named `glpi`).
+  </Step>
+  
+  <Step title="Configure export options">
+    - Export to self-contained file
+    - Include stored procedures and events
+    - Select all tables
+  </Step>
+  
+  <Step title="Start export">
+    Click **Start Export** and save the file.
+  </Step>
+</Steps>
+
+### Automated Database Backups
+
+#### Cron Job Example
+
+```bash
+#!/bin/bash
+# Daily backup script
+
+# Configuration
+DB_NAME="glpi"
+DB_USER="glpi"
+DB_PASS="your_password"
+BACKUP_DIR="/backup/itsm-ng/db"
+RETENTION_DAYS=30
+
+# Create backup directory
+mkdir -p "$BACKUP_DIR"
+
+# Backup filename with timestamp
+BACKUP_FILE="$BACKUP_DIR/itsm-ng-db-$(date +%Y%m%d-%H%M%S).sql.gz"
+
+# Perform backup
+mysqldump \
+  --user="$DB_USER" \
+  --password="$DB_PASS" \
+  --single-transaction \
+  --routines \
+  --triggers \
+  --events \
+  "$DB_NAME" | gzip > "$BACKUP_FILE"
+
+# Check if backup was successful
+if [ $? -eq 0 ]; then
+    echo "Backup completed: $BACKUP_FILE"
+    
+    # Delete old backups
+    find "$BACKUP_DIR" -name "itsm-ng-db-*.sql.gz" -mtime +$RETENTION_DAYS -delete
+    echo "Old backups cleaned (retention: $RETENTION_DAYS days)"
+else
+    echo "Backup failed!"
+    exit 1
+fi
+```
+
+#### Schedule with Cron
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add daily backup at 2 AM
+0 2 * * * /usr/local/bin/itsm-ng-backup.sh >> /var/log/itsm-ng-backup.log 2>&1
+```
+
+## File System Backup
+
+### Using rsync
+
+```bash
+# Backup ITSM-NG directory
+rsync -avz \
+  --exclude 'vendor' \
+  --exclude 'files/_cache' \
+  --exclude 'files/_sessions' \
+  /var/www/html/itsm-ng/ \
+  /backup/itsm-ng/files/itsm-ng-$(date +%Y%m%d)/
+```
+
+### Using tar
+
+```bash
+# Create compressed archive
+tar -czf \
+  /backup/itsm-ng-files-$(date +%Y%m%d).tar.gz \
+  --exclude='vendor' \
+  --exclude='files/_cache' \
+  --exclude='files/_sessions' \
+  -C /var/www/html itsm-ng/
+```
+
+### Critical Files Only
+
+```bash
+# Backup only essential data
+tar -czf /backup/itsm-ng-critical-$(date +%Y%m%d).tar.gz \
+  -C /var/www/html/itsm-ng \
+  config/ \
+  files/_pictures/ \
+  files/_dumps/ \
+  files/_plugins/ \
+  files/_uploads/
+```
+
+## Complete Backup Script
+
+### All-in-One Backup
+
+```bash
+#!/bin/bash
+# Complete ITSM-NG backup script
+
+set -e  # Exit on error
+
+# Configuration
+BACKUP_ROOT="/backup/itsm-ng"
+ITSM_ROOT="/var/www/html/itsm-ng"
+DB_NAME="glpi"
+DB_USER="glpi"
+DB_PASS="your_password"
+DATE=$(date +%Y%m%d-%H%M%S)
+RETENTION_DAYS=30
+
+# Create backup directories
+mkdir -p "$BACKUP_ROOT/daily"
+BACKUP_DIR="$BACKUP_ROOT/daily/$DATE"
+mkdir -p "$BACKUP_DIR"
+
+echo "Starting ITSM-NG backup: $DATE"
+
+# 1. Backup database
+echo "Backing up database..."
+mysqldump \
+  --user="$DB_USER" \
+  --password="$DB_PASS" \
+  --single-transaction \
+  --routines \
+  --triggers \
+  --events \
+  "$DB_NAME" | gzip > "$BACKUP_DIR/database.sql.gz"
+
+if [ $? -ne 0 ]; then
+    echo "Database backup failed!"
+    exit 1
+fi
+
+# 2. Backup files
+echo "Backing up files..."
+tar -czf "$BACKUP_DIR/files.tar.gz" \
+  --exclude='vendor' \
+  --exclude='files/_cache' \
+  --exclude='files/_sessions' \
+  -C "$ITSM_ROOT" .
+
+if [ $? -ne 0 ]; then
+    echo "File backup failed!"
+    exit 1
+fi
+
+# 3. Backup configuration
+echo "Backing up configuration..."
+cp "$ITSM_ROOT/config/config_db.php" "$BACKUP_DIR/config_db.php"
+
+# 4. Create metadata file
+cat > "$BACKUP_DIR/backup-info.txt" << EOF
+Backup Date: $DATE
+ITSM-NG Version: $(cat $ITSM_ROOT/version.txt 2>/dev/null || echo 'Unknown')
+Database: $DB_NAME
+Backup Type: Complete
+EOF
+
+# 5. Calculate checksums
+echo "Calculating checksums..."
+cd "$BACKUP_DIR"
+sha256sum * > checksums.sha256
+
+# 6. Clean old backups
+echo "Cleaning old backups..."
+find "$BACKUP_ROOT/daily" -maxdepth 1 -type d -mtime +$RETENTION_DAYS -exec rm -rf {} \;
+
+echo "Backup completed successfully!"
+echo "Location: $BACKUP_DIR"
+echo "Size: $(du -sh $BACKUP_DIR | cut -f1)"
+```
+
+## Restore Procedures
+
+### Database Restore
+
+<Steps>
+  <Step title="Stop web server">
+    ```bash
+    sudo systemctl stop apache2  # or nginx
+    ```
+  </Step>
+  
+  <Step title="Create new database">
+    ```bash
+    mysql -u root -p
+    DROP DATABASE IF EXISTS glpi;
+    CREATE DATABASE glpi CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    GRANT ALL PRIVILEGES ON glpi.* TO 'glpi'@'localhost';
+    FLUSH PRIVILEGES;
+    EXIT;
+    ```
+  </Step>
+  
+  <Step title="Restore database">
+    ```bash
+    # From uncompressed backup
+    mysql -u glpi -p glpi < itsm-ng-backup.sql
+    
+    # From compressed backup
+    gunzip < itsm-ng-backup.sql.gz | mysql -u glpi -p glpi
+    ```
+  </Step>
+  
+  <Step title="Verify restoration">
+    ```bash
+    mysql -u glpi -p -e "USE glpi; SHOW TABLES; SELECT COUNT(*) FROM glpi_users;"
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+Restoring a database will overwrite ALL existing data. Ensure you have a current backup before proceeding.
+</Warning>
+
+### File System Restore
+
+<Steps>
+  <Step title="Stop services">
+    ```bash
+    sudo systemctl stop apache2
+    sudo systemctl stop php*-fpm
+    ```
+  </Step>
+  
+  <Step title="Backup current installation">
+    ```bash
+    mv /var/www/html/itsm-ng /var/www/html/itsm-ng.old
+    ```
+  </Step>
+  
+  <Step title="Restore files">
+    ```bash
+    # From tar archive
+    mkdir -p /var/www/html/itsm-ng
+    tar -xzf itsm-ng-files.tar.gz -C /var/www/html/itsm-ng
+    
+    # Or from rsync backup
+    rsync -avz /backup/itsm-ng/files/latest/ /var/www/html/itsm-ng/
+    ```
+  </Step>
+  
+  <Step title="Set permissions">
+    ```bash
+    sudo chown -R www-data:www-data /var/www/html/itsm-ng
+    sudo chmod -R 755 /var/www/html/itsm-ng
+    sudo chmod -R 775 /var/www/html/itsm-ng/files
+    sudo chmod -R 775 /var/www/html/itsm-ng/config
+    ```
+  </Step>
+  
+  <Step title="Reinstall dependencies">
+    ```bash
+    cd /var/www/html/itsm-ng
+    sudo -u www-data composer install --no-dev --optimize-autoloader
+    ```
+  </Step>
+  
+  <Step title="Start services">
+    ```bash
+    sudo systemctl start php*-fpm
+    sudo systemctl start apache2
+    ```
+  </Step>
+</Steps>
+
+## Disaster Recovery
+
+### Complete System Restore
+
+<Steps>
+  <Step title="Prepare new server">
+    Install LAMP/LEMP stack and required PHP extensions.
+  </Step>
+  
+  <Step title="Restore database">
+    Follow database restore procedure above.
+  </Step>
+  
+  <Step title="Restore files">
+    Follow file system restore procedure above.
+  </Step>
+  
+  <Step title="Update configuration">
+    Edit `/config/config_db.php` if database credentials changed.
+  </Step>
+  
+  <Step title="Run migrations">
+    If restoring to a newer ITSM-NG version:
+    ```bash
+    php bin/console migration:migrate
+    ```
+  </Step>
+  
+  <Step title="Test system">
+    - Access web interface
+    - Verify login works
+    - Check tickets and assets load
+    - Test notifications
+  </Step>
+</Steps>
+
+## Best Practices
+
+<Card title="Backup Recommendations">
+  - **3-2-1 Rule**: 3 copies, 2 different media types, 1 offsite
+  - **Frequency**: Daily backups minimum, hourly for critical systems
+  - **Testing**: Test restores monthly to verify backup integrity
+  - **Retention**: Keep daily backups for 30 days, monthly for 1 year
+  - **Monitoring**: Set up alerts for backup failures
+  - **Encryption**: Encrypt backups containing sensitive data
+  - **Documentation**: Document restore procedures and test them
+  - **Offsite**: Store backups in different physical location or cloud
+</Card>
+
+## Backup Verification
+
+### Automated Testing
+
+```bash
+#!/bin/bash
+# Verify backup integrity
+
+BACKUP_FILE="$1"
+
+if [ ! -f "$BACKUP_FILE" ]; then
+    echo "Backup file not found: $BACKUP_FILE"
+    exit 1
+fi
+
+# Test database backup
+if [[ $BACKUP_FILE == *.sql ]]; then
+    # Try to parse SQL file
+    mysql --skip-column-names -e "SELECT 1" < "$BACKUP_FILE" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo "Database backup is valid"
+    else
+        echo "Database backup is corrupted!"
+        exit 1
+    fi
+elif [[ $BACKUP_FILE == *.sql.gz ]]; then
+    # Test gzip integrity
+    gunzip -t "$BACKUP_FILE"
+    if [ $? -eq 0 ]; then
+        echo "Compressed database backup is valid"
+    else
+        echo "Compressed backup is corrupted!"
+        exit 1
+    fi
+elif [[ $BACKUP_FILE == *.tar.gz ]]; then
+    # Test tar archive
+    tar -tzf "$BACKUP_FILE" > /dev/null
+    if [ $? -eq 0 ]; then
+        echo "File backup archive is valid"
+    else
+        echo "Archive is corrupted!"
+        exit 1
+    fi
+fi
+```
+
+## Cloud Backup Solutions
+
+### AWS S3 Integration
+
+```bash
+# Upload backup to S3
+aws s3 cp itsm-ng-backup-$(date +%Y%m%d).tar.gz \
+  s3://my-bucket/itsm-ng-backups/ \
+  --storage-class GLACIER
+
+# Download from S3
+aws s3 cp s3://my-bucket/itsm-ng-backups/itsm-ng-backup-20240101.tar.gz ./
+```
+
+### Rsync to Remote Server
+
+```bash
+# Backup to remote server via SSH
+rsync -avz -e ssh \
+  /backup/itsm-ng/ \
+  backup-server:/mnt/backups/itsm-ng/
+```
+
+## Troubleshooting
+
+### Backup Too Large
+
+- Use compression (`gzip`, `bzip2`)
+- Exclude non-essential data
+- Archive old tickets separately
+- Use incremental backups
+
+### Restore Failed
+
+- Check backup file integrity
+- Verify database credentials
+- Ensure sufficient disk space
+- Check file permissions
+- Review error logs
+
+### Slow Backups
+
+- Use `--single-transaction` for mysqldump
+- Schedule during off-peak hours
+- Optimize database before backup
+- Use faster storage for backups
+- Consider incremental backups

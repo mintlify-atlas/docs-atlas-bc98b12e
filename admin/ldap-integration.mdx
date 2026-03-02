@@ -1,0 +1,429 @@
+---
+title: LDAP/Active Directory Integration
+description: Configure and manage LDAP and Active Directory authentication and synchronization
+---
+
+## Overview
+
+ITSM-NG supports authentication and data synchronization with LDAP directories, including Microsoft Active Directory, OpenLDAP, and other LDAP-compliant services.
+
+## Prerequisites
+
+### PHP LDAP Extension
+
+The PHP LDAP extension must be installed:
+
+```bash
+# Check if LDAP extension is loaded
+php -m | grep ldap
+
+# Install on Debian/Ubuntu
+sudo apt-get install php-ldap
+
+# Install on RHEL/CentOS
+sudo yum install php-ldap
+```
+
+<Warning>
+If the LDAP extension is not available, LDAP features will be disabled in ITSM-NG.
+</Warning>
+
+## Adding LDAP Server
+
+<Steps>
+  <Step title="Navigate to LDAP configuration">
+    Go to **Setup > Authentication > LDAP directories**.
+  </Step>
+  
+  <Step title="Add directory">
+    Click **Add** to create a new LDAP configuration.
+  </Step>
+  
+  <Step title="Choose preconfiguration">
+    Select a template for quick setup:
+    - **Active Directory**: Microsoft AD with typical settings
+    - **Default values**: Standard LDAP configuration
+  </Step>
+  
+  <Step title="Enter connection details">
+    Fill in the server information (see below).
+  </Step>
+  
+  <Step title="Test connection">
+    Use the **Test** button to verify connectivity.
+  </Step>
+  
+  <Step title="Save configuration">
+    Click **Add** to save the LDAP directory.
+  </Step>
+</Steps>
+
+## LDAP Server Configuration
+
+### Basic Connection Settings
+
+```yaml
+Name: Descriptive name for the LDAP server
+Server: LDAP server hostname or IP
+Port: 389 (LDAP) or 636 (LDAPS)
+BaseDN: Base Distinguished Name (e.g., dc=company,dc=com)
+RootDN: Bind DN for connection (e.g., cn=admin,dc=company,dc=com)
+Password: Password for RootDN
+Active: Enable/disable this directory
+Default server: Mark as default authentication source
+```
+
+<Note>
+If RootDN and password are not provided, ITSM-NG will attempt anonymous binding.
+</Note>
+
+### Active Directory Preconfiguration
+
+When selecting Active Directory preset, these values are configured:
+
+```yaml
+Port: 389
+Connection filter: (&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))
+Login field: samaccountname
+Sync field: objectguid
+Group field: memberof
+Email field: mail
+First name field: givenname
+Surname field: sn
+Phone field: telephonenumber
+Mobile field: mobile
+Employee number: employeenumber
+```
+
+See `/inc/authldap.class.php:157-189` for AD preconfiguration details.
+
+### Connection Filter
+
+The connection filter determines which LDAP objects are considered valid users:
+
+#### Active Directory Example
+```ldap
+(&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))
+```
+This excludes disabled accounts (userAccountControl bit 2).
+
+#### OpenLDAP Example
+```ldap
+(&(objectClass=inetOrgPerson)(!(accountStatus=disabled)))
+```
+
+## Advanced Configuration
+
+### Connection Options
+
+<Steps>
+  <Step title="Use TLS">
+    Enable **Use TLS** for encrypted communication (requires TLS support in PHP LDAP).
+  </Step>
+  
+  <Step title="Time zone offset">
+    Set the LDAP directory's timezone offset from GMT (-12 to +13 hours).
+  </Step>
+  
+  <Step title="Paged results">
+    Enable for large directories:
+    - **Use paged results**: Enable pagination
+    - **Page size**: 100-100,000 results per page
+    - **Maximum results**: Total limit (0 = unlimited)
+  </Step>
+  
+  <Step title="Alias dereferencing">
+    Configure how LDAP aliases are handled:
+    - **Never**: Don't follow aliases (default)
+    - **Always**: Always follow aliases
+    - **During search**: Follow when searching
+    - **When locating**: Follow when locating objects
+  </Step>
+</Steps>
+
+### Field Mapping
+
+Map LDAP attributes to ITSM-NG user fields:
+
+```yaml
+Login field: samaccountname / uid
+Sync field: objectguid / entryuuid
+First name: givenname / givenName
+Surname: sn / sn
+Email 1-4: mail, mail2, mail3, mail4
+Phone: telephonenumber
+Phone 2: othertelephone
+Mobile: mobile
+Title: title
+Category: department
+Employee number: employeenumber
+Comments: info / description
+Picture: jpegPhoto / thumbnailPhoto
+Language: preferredLanguage
+Location: physicalDeliveryOfficeName
+```
+
+<Note>
+Field names are automatically converted to lowercase by ITSM-NG.
+</Note>
+
+### Synchronization Field
+
+The sync field uniquely identifies users:
+
+- **Active Directory**: Use `objectguid` (binary GUID)
+- **OpenLDAP**: Use `entryuuid` (UUID)
+- **Other**: Any unique, immutable attribute
+
+<Warning>
+Once users are imported, the synchronization field cannot be changed if it's already in use.
+</Warning>
+
+See `/inc/authldap.class.php:220-237` for sync field validation.
+
+## Group Configuration
+
+### Group Search Types
+
+<Steps>
+  <Step title="In users">
+    Search for group membership in user objects:
+    - User attribute contains group DNs or names
+    - Example: `memberOf` in Active Directory
+  </Step>
+  
+  <Step title="In groups">
+    Search for members in group objects:
+    - Group attribute contains user DNs
+    - Example: `member` attribute in groups
+  </Step>
+  
+  <Step title="In users and groups">
+    Use both methods for comprehensive group detection.
+  </Step>
+</Steps>
+
+### Group Field Configuration
+
+```yaml
+User attribute with groups: memberof / groupMembership
+Group search filter: (objectClass=group)
+Group attribute with users: member / uniqueMember
+Use DN in search: Yes (for DN-based membership)
+```
+
+### Active Directory Groups
+
+```ldap
+Group search type: In users
+User group attribute: memberof
+Group filter: (&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=2147483648))
+Use DN: Yes
+```
+
+## User Import and Synchronization
+
+### Manual Import
+
+<Steps>
+  <Step title="Access LDAP import">
+    Go to **Administration > Users > LDAP directory link**.
+  </Step>
+  
+  <Step title="Select directory">
+    Choose the LDAP server to search.
+  </Step>
+  
+  <Step title="Search for users">
+    Enter search criteria:
+    - **Login**: Search by username
+    - **Email**: Search by email address
+    - **Advanced filter**: Custom LDAP filter
+  </Step>
+  
+  <Step title="Select users">
+    Check users to import from search results.
+  </Step>
+  
+  <Step title="Set import options">
+    Configure:
+    - **Entity**: Target entity
+    - **Recursive**: Include child entities
+    - **Import type**: User or contact
+  </Step>
+  
+  <Step title="Import">
+    Click **Actions > Import** to create user accounts.
+  </Step>
+</Steps>
+
+### Automatic Synchronization
+
+Enable automatic import and sync:
+
+<Steps>
+  <Step title="Configure in Setup > Authentication">
+    - **Automatically add users**: Import on first login
+    - **Add without accreditation**: Create account without profile
+    - **Action when deleted from LDAP**:
+      - Preserve (0): Keep account unchanged
+      - Delete (1): Move to trashbin
+      - Withdraw rights (2): Remove dynamic authorizations
+      - Disable (3): Deactivate account
+      - Disable and withdraw (4): Combine both
+  </Step>
+</Steps>
+
+See `/inc/authldap.class.php:64-88` for action constants.
+
+### Group Synchronization
+
+Groups are synchronized automatically:
+
+- On user creation (if `_groups` is set in input)
+- On user update (if authentication type is LDAP)
+- Dynamic groups are marked as `is_dynamic = 1`
+- Manual group memberships coexist with dynamic ones
+- Groups not in LDAP are removed (if dynamic)
+
+See `/inc/user.class.php:1199-1264` for group sync implementation.
+
+## LDAP Replication
+
+### Adding Replicas
+
+For high availability, configure LDAP replicas:
+
+<Steps>
+  <Step title="Access replicates tab">
+    Edit the LDAP directory and go to **Replicates** tab.
+  </Step>
+  
+  <Step title="Add replica">
+    Click **Add a replicate**:
+    - **Name**: Replica identifier
+    - **Server**: Replica hostname
+    - **Port**: Replica port
+  </Step>
+  
+  <Step title="Test replica">
+    Use the **Test** button to verify connectivity.
+  </Step>
+</Steps>
+
+ITSM-NG will automatically fail over to replicas if the primary server is unavailable.
+
+## Entity Mapping
+
+### LDAP to Entity Mapping
+
+Map LDAP organizational units to ITSM-NG entities:
+
+```yaml
+Entity field: ou / organizationalUnit
+Entity condition: (objectclass=organizationalUnit)
+```
+
+This allows automatic entity assignment based on LDAP structure.
+
+## Testing LDAP Configuration
+
+### Connection Test
+
+<Steps>
+  <Step title="Basic test">
+    Click **Test** button on the LDAP configuration form to verify:
+    - Server connectivity
+    - Authentication with RootDN
+    - BaseDN accessibility
+  </Step>
+  
+  <Step title="User search test">
+    Use the import interface to test:
+    - User search queries
+    - Attribute mapping
+    - Filter correctness
+  </Step>
+  
+  <Step title="Group test">
+    Import a test user and verify:
+    - Group memberships are detected
+    - Group names are correct
+    - Dynamic groups are marked
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Cannot Connect to LDAP
+
+Check:
+- Server hostname is correct and reachable
+- Port is open (use `telnet server 389`)
+- Firewall allows LDAP traffic
+- RootDN and password are correct
+- BaseDN exists in directory
+
+### Users Not Found
+
+Verify:
+- Connection filter includes the users
+- BaseDN encompasses user objects
+- Login field matches LDAP attribute
+- Attribute names are lowercase
+
+### Groups Not Synchronized
+
+Confirm:
+- Group search type is correct
+- Group field attribute exists on users/groups
+- Group filter matches group objects
+- "Use DN" setting matches attribute format
+
+### Slow LDAP Searches
+
+Optimize:
+- Enable paged results
+- Reduce page size
+- Set maximum result limit
+- Add indexes on LDAP server
+- Use more specific filters
+
+## Security Best Practices
+
+<Card title="LDAP Security">
+  - **Use TLS**: Encrypt LDAP traffic when possible
+  - **Bind credentials**: Use dedicated service account with minimal rights
+  - **Read-only access**: Bind account only needs read permission
+  - **Filter users**: Exclude service accounts and system users
+  - **Monitor access**: Log LDAP authentication attempts
+  - **Regular audits**: Review LDAP configuration periodically
+  - **Test replicas**: Ensure failover works correctly
+</Card>
+
+## Advanced Topics
+
+### Custom Attribute Expressions
+
+For location field and others, use expressions:
+
+```yaml
+Location: %{city} > %{roomnumber}
+Comment: %{department} - %{title}
+```
+
+Multiple fields can be combined with separators.
+
+### Picture Synchronization
+
+If `picture_field` is configured:
+- User photo is synchronized from LDAP
+- Stored as JPEG in `GLPI_PICTURE_DIR`
+- Thumbnail generated automatically
+- Updated when photo changes in LDAP
+
+See `/inc/user.class.php:1274-1352` for picture sync implementation.
+
+### Inventory Domain
+
+Set **Domain name used by inventory tool** to link LDAP users with inventory data from tools like GLPI Agent.

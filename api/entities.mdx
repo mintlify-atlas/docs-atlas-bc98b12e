@@ -1,0 +1,222 @@
+---
+title: Entities
+description: Get and change active entities in ITSM-NG
+---
+
+Manage entities for the current session and active profile.
+
+## Get My Entities
+
+Retrieve all possible entities for the current logged-in user and active profile.
+
+### Endpoint
+
+```
+GET /apirest.php/getMyEntities/
+```
+
+### Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+<ParamField header="Session-Token" type="string" required>
+  Session token provided by the `initSession` endpoint
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Authorization string provided by the GLPI API configuration
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="is_recursive" type="boolean" default="false">
+  Also display sub-entities of the active entity
+</ParamField>
+
+### Response
+
+<ResponseField name="myentities" type="array" required>
+  Array of all user entities
+  
+  <expandable title="entity object">
+    <ResponseField name="id" type="integer">
+      Entity ID
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Entity name
+    </ResponseField>
+  </expandable>
+</ResponseField>
+
+### Example
+
+```bash
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  'http://path/to/glpi/apirest.php/getMyEntities'
+```
+
+**Response:**
+
+```json
+{
+  "myentities": [
+    {
+      "id": 71,
+      "name": "my_entity"
+    }
+  ]
+}
+```
+
+---
+
+## Get Active Entities
+
+Retrieve the active entities of the current logged-in user.
+
+### Endpoint
+
+```
+GET /apirest.php/getActiveEntities/
+```
+
+### Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+<ParamField header="Session-Token" type="string" required>
+  Session token provided by the `initSession` endpoint
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Authorization string provided by the GLPI API configuration
+</ParamField>
+
+### Response
+
+<ResponseField name="active_entity" type="object" required>
+  Current active entity information
+  
+  <expandable title="properties">
+    <ResponseField name="id" type="integer">
+      Active entity ID
+    </ResponseField>
+    
+    <ResponseField name="active_entity_recursive" type="boolean">
+      Whether sub-entities are visible
+    </ResponseField>
+    
+    <ResponseField name="active_entities" type="array">
+      Array of all active entities (active_entity and its children)
+      
+      <expandable title="entity object">
+        <ResponseField name="id" type="integer">
+          Entity ID
+        </ResponseField>
+      </expandable>
+    </ResponseField>
+  </expandable>
+</ResponseField>
+
+### Example
+
+```bash
+curl -X GET \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  'http://path/to/glpi/apirest.php/getActiveEntities'
+```
+
+**Response:**
+
+```json
+{
+  "active_entity": {
+    "id": 1,
+    "active_entity_recursive": true,
+    "active_entities": [
+      {"id": 1},
+      {"id": 71}
+    ]
+  }
+}
+```
+
+---
+
+## Change Active Entities
+
+Change the active entity and optionally enable recursive mode.
+
+### Endpoint
+
+```
+POST /apirest.php/changeActiveEntities/
+```
+
+### Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`
+</ParamField>
+
+<ParamField header="Session-Token" type="string" required>
+  Session token provided by the `initSession` endpoint
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Authorization string provided by the GLPI API configuration
+</ParamField>
+
+### JSON Payload
+
+<ParamField body="entities_id" type="integer|string" default="all">
+  ID of the new active entity. Use `"all"` to load all possible entities. Use `getMyEntities` to get available entity IDs.
+</ParamField>
+
+<ParamField body="is_recursive" type="boolean" default="false">
+  Also display sub-entities of the active entity
+</ParamField>
+
+### Response
+
+Returns an empty response body on success.
+
+### Example
+
+```bash
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+  -H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+  -d '{"entities_id": 1, "is_recursive": true}' \
+  'http://path/to/glpi/apirest.php/changeActiveEntities'
+```
+
+**Response:**
+
+```
+200 OK
+```
+
+### Status Codes
+
+- `200 OK` - Entity changed successfully
+- `400 Bad Request` - Error in input parameters
+
+### Notes
+
+- This endpoint has write access to the session
+- Only entities returned by `getMyEntities` can be set as active
+- The `is_recursive` parameter determines whether sub-entities are included in the active scope
+- Setting `entities_id` to `"all"` activates all available entities
+- Changing the active entity affects which resources are accessible in subsequent API calls

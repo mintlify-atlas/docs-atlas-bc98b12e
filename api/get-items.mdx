@@ -1,0 +1,529 @@
+---
+title: GET Operations
+description: Retrieve items, collections, and sub-items from ITSM-NG using GET requests
+---
+
+The ITSM-NG REST API provides multiple GET endpoints to retrieve data from the system. All GET operations require authentication via Session-Token.
+
+## Get an Item
+
+Retrieve a single item by its ID.
+
+### Endpoint
+
+```
+GET /apirest.php/:itemtype/:id
+```
+
+### Headers
+
+<ParamField header="Session-Token" type="string" required>
+  Session token obtained from [initSession](/api/init-session)
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Optional authorization string from API configuration
+</ParamField>
+
+<ParamField header="Content-Type" type="string" default="application/json">
+  Must be set to `application/json`
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="expand_dropdowns" type="boolean" default={false}>
+  Show dropdown names instead of IDs
+</ParamField>
+
+<ParamField query="get_hateoas" type="boolean" default={true}>
+  Show item relations in a `links` attribute
+</ParamField>
+
+<ParamField query="get_sha1" type="boolean" default={false}>
+  Get a SHA1 signature instead of full response
+</ParamField>
+
+<ParamField query="with_devices" type="boolean" default={false}>
+  Only for Computer, NetworkEquipment, Peripheral, Phone, Printer - retrieve associated components
+</ParamField>
+
+<ParamField query="with_disks" type="boolean" default={false}>
+  Only for Computer - retrieve associated file systems
+</ParamField>
+
+<ParamField query="with_softwares" type="boolean" default={false}>
+  Only for Computer - retrieve associated software installations
+</ParamField>
+
+<ParamField query="with_connections" type="boolean" default={false}>
+  Only for Computer - retrieve direct connections (peripherals, printers)
+</ParamField>
+
+<ParamField query="with_networkports" type="boolean" default={false}>
+  Retrieve network connections and advanced network information
+</ParamField>
+
+<ParamField query="with_infocoms" type="boolean" default={false}>
+  Retrieve financial and administrative information
+</ParamField>
+
+<ParamField query="with_contracts" type="boolean" default={false}>
+  Retrieve associated contracts
+</ParamField>
+
+<ParamField query="with_documents" type="boolean" default={false}>
+  Retrieve associated external documents
+</ParamField>
+
+<ParamField query="with_tickets" type="boolean" default={false}>
+  Retrieve associated ITIL tickets
+</ParamField>
+
+<ParamField query="with_problems" type="boolean" default={false}>
+  Retrieve associated ITIL problems
+</ParamField>
+
+<ParamField query="with_changes" type="boolean" default={false}>
+  Retrieve associated ITIL changes
+</ParamField>
+
+<ParamField query="with_notes" type="boolean" default={false}>
+  Retrieve notes
+</ParamField>
+
+<ParamField query="with_logs" type="boolean" default={false}>
+  Retrieve historical data
+</ParamField>
+
+<ParamField query="add_keys_names" type="array">
+  Retrieve friendly names for foreign keys and/or "id"
+</ParamField>
+
+### Response
+
+<ResponseField name="id" type="integer">
+  Unique identifier of the item
+</ResponseField>
+
+<ResponseField name="links" type="array">
+  HATEOAS relations (if `get_hateoas=true`)
+</ResponseField>
+
+Additional fields vary by itemtype.
+
+### Example Request
+
+```bash
+curl -X GET \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+'http://path/to/glpi/apirest.php/Computer/71?expand_dropdowns=true'
+```
+
+### Example Response
+
+```json
+{
+  "id": 71,
+  "entities_id": "Root Entity",
+  "name": "adelaunay-ThinkPad-Edge-E320",
+  "serial": "12345",
+  "otherserial": "test2",
+  "contact": "adelaunay",
+  "contact_num": null,
+  "users_id_tech": " ",
+  "groups_id_tech": " ",
+  "comment": "test222222qsdqsd",
+  "date_mod": "2015-09-25 09:33:41",
+  "links": [{
+    "rel": "Entity",
+    "href": "http://path/to/glpi/api/Entity/0"
+  }]
+}
+```
+
+---
+
+## Get All Items
+
+Retrieve a collection of items with pagination support.
+
+### Endpoint
+
+```
+GET /apirest.php/:itemtype/
+```
+
+### Headers
+
+<ParamField header="Session-Token" type="string" required>
+  Session token obtained from initSession
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Optional authorization string from API configuration
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="expand_dropdowns" type="boolean" default={false}>
+  Show dropdown names instead of IDs
+</ParamField>
+
+<ParamField query="get_hateoas" type="boolean" default={true}>
+  Show item relations in a `links` attribute
+</ParamField>
+
+<ParamField query="only_id" type="boolean" default={false}>
+  Keep only ID keys in returned data
+</ParamField>
+
+<ParamField query="range" type="string" default="0-50">
+  Pagination range in format `start-end` (e.g., `150-200`)
+</ParamField>
+
+<ParamField query="sort" type="integer" default={1}>
+  Field ID to sort by
+</ParamField>
+
+<ParamField query="order" type="string" default="ASC">
+  Sort order: `ASC` (ascending) or `DESC` (descending)
+</ParamField>
+
+<ParamField query="searchText" type="object">
+  Filters to apply (key = field, value = search text)
+</ParamField>
+
+<ParamField query="is_deleted" type="boolean" default={false}>
+  Return deleted elements
+</ParamField>
+
+<ParamField query="add_keys_names" type="array">
+  Retrieve friendly names for foreign keys and/or "id"
+</ParamField>
+
+### Response Headers
+
+- **Content-Range**: `offset-limit/count`
+- **Accept-Range**: `itemtype max`
+
+### Example Request
+
+```bash
+curl -X GET \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+'http://path/to/glpi/apirest.php/Computer/?expand_dropdowns=true'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": 34,
+    "entities_id": "Root Entity",
+    "name": "glpi",
+    "serial": "VMware-42 01 f4 65 27 59 a9 fb-11 bc cd b8 64 68 1f 4b",
+    "otherserial": null,
+    "contact": "teclib",
+    "date_mod": "2011-12-16 17:52:55",
+    "is_deleted": 0,
+    "is_dynamic": 1
+  },
+  {
+    "id": 35,
+    "entities_id": "Root Entity",
+    "name": "mavm1",
+    "serial": "VMware-42 20 d3 04 ac 49 ed c8-ea 15 50 49 e1 40 0f 6c"
+  }
+]
+```
+
+**Response Codes:**
+- `200 OK` - All items returned
+- `206 Partial Content` - Paginated response
+- `401 Unauthorized` - Invalid or missing session token
+
+---
+
+## Get Sub Items
+
+Retrieve child items related to a parent item.
+
+### Endpoint
+
+```
+GET /apirest.php/:itemtype/:id/:sub_itemtype
+```
+
+### Headers
+
+<ParamField header="Session-Token" type="string" required>
+  Session token obtained from initSession
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Optional authorization string from API configuration
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="expand_dropdowns" type="boolean" default={false}>
+  Show dropdown names instead of IDs
+</ParamField>
+
+<ParamField query="get_hateoas" type="boolean" default={true}>
+  Show item relations in a `links` attribute
+</ParamField>
+
+<ParamField query="only_id" type="boolean" default={false}>
+  Keep only ID keys in returned data
+</ParamField>
+
+<ParamField query="range" type="string" default="0-50">
+  Pagination range in format `start-end`
+</ParamField>
+
+<ParamField query="sort" type="integer" default={1}>
+  Search option ID to sort by
+</ParamField>
+
+<ParamField query="order" type="string" default="ASC">
+  Sort order: `ASC` or `DESC`
+</ParamField>
+
+<ParamField query="add_keys_names" type="array">
+  Retrieve friendly names for foreign keys
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+'http://path/to/glpi/apirest.php/User/2/Log'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": 22117,
+    "itemtype": "User",
+    "items_id": 2,
+    "itemtype_link": "Profile",
+    "linked_action": 17,
+    "user_name": "glpi (27)",
+    "date_mod": "2015-10-13 10:00:59",
+    "id_search_option": 0,
+    "old_value": "",
+    "new_value": "super-admin (4)"
+  },
+  {
+    "id": 22118,
+    "itemtype": "User",
+    "items_id": 2,
+    "itemtype_link": "",
+    "linked_action": 0,
+    "user_name": "glpi (2)",
+    "date_mod": "2015-10-13 10:01:22",
+    "id_search_option": 80,
+    "old_value": "Root entity (0)",
+    "new_value": "Root entity > my entity (1)"
+  }
+]
+```
+
+---
+
+## Get Multiple Items
+
+Retrieve multiple items of different types in a single request.
+
+### Endpoint
+
+```
+GET /apirest.php/getMultipleItems
+```
+
+### Headers
+
+<ParamField header="Session-Token" type="string" required>
+  Session token obtained from initSession
+</ParamField>
+
+<ParamField header="App-Token" type="string">
+  Optional authorization string from API configuration
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="items" type="array" required>
+  Array of items to retrieve. Each item must contain:
+  - `itemtype` - The type of item (e.g., "User", "Ticket")
+  - `items_id` - The ID of the item
+</ParamField>
+
+<ParamField query="expand_dropdowns" type="boolean" default={false}>
+  Show dropdown names instead of IDs
+</ParamField>
+
+<ParamField query="get_hateoas" type="boolean" default={true}>
+  Show item relations in a `links` attribute
+</ParamField>
+
+<ParamField query="get_sha1" type="boolean" default={false}>
+  Get a SHA1 signature instead of full response
+</ParamField>
+
+<ParamField query="with_devices" type="boolean" default={false}>
+  For Computer, NetworkEquipment, Peripheral, Phone, Printer - retrieve components
+</ParamField>
+
+<ParamField query="with_disks" type="boolean" default={false}>
+  For Computer - retrieve file systems
+</ParamField>
+
+<ParamField query="with_softwares" type="boolean" default={false}>
+  For Computer - retrieve software installations
+</ParamField>
+
+<ParamField query="with_connections" type="boolean" default={false}>
+  For Computer - retrieve direct connections
+</ParamField>
+
+<ParamField query="with_networkports" type="boolean" default={false}>
+  Retrieve network connections
+</ParamField>
+
+<ParamField query="with_infocoms" type="boolean" default={false}>
+  Retrieve financial information
+</ParamField>
+
+<ParamField query="with_contracts" type="boolean" default={false}>
+  Retrieve associated contracts
+</ParamField>
+
+<ParamField query="with_documents" type="boolean" default={false}>
+  Retrieve associated documents
+</ParamField>
+
+<ParamField query="with_tickets" type="boolean" default={false}>
+  Retrieve associated tickets
+</ParamField>
+
+<ParamField query="with_problems" type="boolean" default={false}>
+  Retrieve associated problems
+</ParamField>
+
+<ParamField query="with_changes" type="boolean" default={false}>
+  Retrieve associated changes
+</ParamField>
+
+<ParamField query="with_notes" type="boolean" default={false}>
+  Retrieve notes
+</ParamField>
+
+<ParamField query="with_logs" type="boolean" default={false}>
+  Retrieve historical data
+</ParamField>
+
+<ParamField query="add_keys_names" type="array">
+  Retrieve friendly names for foreign keys
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+-H "App-Token: f7g3csp8mgatg5ebc5elnazakw20i9fyev1qopya7" \
+'http://path/to/glpi/apirest.php/getMultipleItems?items[0][itemtype]=User&items[0][items_id]=2&items[1][itemtype]=Entity&items[1][items_id]=0'
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": 2,
+    "name": "glpi",
+    "firstname": "GLPI",
+    "realname": "Admin"
+  },
+  {
+    "id": 0,
+    "name": "Root Entity",
+    "completename": "Root Entity"
+  }
+]
+```
+
+**Response Codes:**
+- `200 OK` - Items retrieved successfully
+- `401 Unauthorized` - Invalid or missing session token
+- `404 Not Found` - One or more items not found
+
+---
+
+## Pagination
+
+All collection endpoints support pagination using the `range` parameter.
+
+### Range Parameter
+
+The `range` parameter accepts a string in the format `start-end`:
+
+- Default: `0-50` (first 50 items)
+- Example: `150-200` (items 150 through 200)
+- Maximum range varies by itemtype
+
+### Response Headers
+
+Paginated responses include:
+
+- **Content-Range**: `offset-limit/total_count`
+- **Accept-Range**: `itemtype max_range`
+
+### Example
+
+```bash
+curl -X GET \
+-H 'Content-Type: application/json' \
+-H "Session-Token: 83af7e620c83a50a18d3eac2f6ed05a3ca0bea62" \
+'http://path/to/glpi/apirest.php/Computer/?range=0-100'
+```
+
+Response headers:
+```
+Content-Range: 0-100/500
+Accept-Range: 990
+```
+
+This indicates:
+- Returned items 0-100
+- Total of 500 items available
+- Maximum range of 990 items per request
+
+---
+
+## Important Notes
+
+<Warning>
+  GET requests must have an empty body. All parameters must be passed in the URL query string. Failing to do so will trigger an HTTP 400 response.
+</Warning>
+
+<Info>
+  By default, sessions used in the API are read-only. You can pass `session_write=true` to enable write access, but this will lock sessions and prevent parallel calls.
+</Info>
+
+<Note>
+  The `Last-Modified` header in single item responses contains the date of the item's last modification.
+</Note>

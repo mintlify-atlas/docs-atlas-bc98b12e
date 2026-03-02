@@ -1,0 +1,245 @@
+---
+title: System Configuration
+description: Configure ITSM-NG system settings and general parameters
+---
+
+## Overview
+
+The System Configuration interface allows administrators to manage core ITSM-NG settings, display preferences, search options, and system behavior.
+
+## Accessing Configuration
+
+Navigate to **Setup > General** to access the system configuration interface.
+
+<Note>
+You need the `config` UPDATE right to modify system configuration.
+</Note>
+
+## General Setup
+
+### Application URL
+
+Configure the base URL of your ITSM-NG installation:
+
+- **URL of the application**: The root URL used for generating links (e.g., `https://itsm.example.com`)
+- **API URL**: Base URL for API access (if different from the main URL)
+
+<Warning>
+Ensure the URL is valid and ends without a trailing slash. Invalid URLs will be rejected.
+</Warning>
+
+### Display Settings
+
+<Steps>
+  <Step title="Text in login box">
+    Customize the message displayed on the login page to provide information to users.
+  </Step>
+  
+  <Step title="Help links">
+    Configure documentation URLs:
+    - **Simplified interface help link**: For helpdesk users
+    - **Standard interface help link**: For technical users
+  </Step>
+  
+  <Step title="Character limits">
+    Set default limits:
+    - **Default characters limit**: For summary text boxes (default: depends on config)
+    - **URL length limit**: Between 20-80 characters, increment by 5
+    - **Decimal numbers**: Between 1-4 decimal places
+  </Step>
+</Steps>
+
+### Translation Options
+
+Enable or disable translation features:
+
+- **Translation of dropdowns**: Translate dropdown values based on user language
+- **Knowledge base translation**: Enable multi-language knowledge base articles
+- **Translation of reminders**: Translate reminder content
+
+## Dynamic Display
+
+### Dropdown Configuration
+
+```yaml
+Page size for dropdown: 1-200 items
+Autocompletion: Enable/Disable
+Minimum items for search: 0-200 (0 = Never show search)
+```
+
+### Search Engine Settings
+
+<Steps>
+  <Step title="Items seen">
+    Configure how "Items seen" appears in search:
+    - **No**: Disabled
+    - **Yes (last criterion)**: Appears last
+    - **Yes (default criterion)**: Default selection
+  </Step>
+  
+  <Step title="Global search">
+    Enable global search across all item types.
+  </Step>
+  
+  <Step title="Search all option">
+    Allow users to search all items at once.
+  </Step>
+</Steps>
+
+## Item Locks
+
+### Configuring Lock Mechanism
+
+<Steps>
+  <Step title="Enable locks">
+    Check **Use locks** to prevent concurrent editing.
+  </Step>
+  
+  <Step title="Select lock profile">
+    Choose the profile used when items are locked.
+  </Step>
+  
+  <Step title="Select lockable items">
+    Choose which item types can be locked:
+    - Tickets
+    - Changes
+    - Problems
+    - And other configurable items
+  </Step>
+</Steps>
+
+## Auto Login Settings
+
+### Remember Me Configuration
+
+```php
+Time to allow "Remember Me": Disabled to 2 months
+Options: Hourly, Daily, Weekly, Monthly
+Default state: Checked/Unchecked
+```
+
+<Warning>
+Enabling "Remember Me" for extended periods may pose security risks.
+</Warning>
+
+### Login Source Display
+
+Enable **Display source dropdown on login page** to allow users to select authentication source (LDAP, Local, etc.).
+
+## Maintenance Mode
+
+Activating maintenance mode:
+
+<Steps>
+  <Step title="Enable maintenance mode">
+    Check the **Maintenance mode** option in configuration.
+  </Step>
+  
+  <Step title="Access backdoor">
+    A backdoor URL will be provided:
+    ```
+    https://your-itsm-url/index.php?skipMaintenance=1
+    ```
+  </Step>
+  
+  <Step title="Disable maintenance">
+    Uncheck the option to restore normal access.
+  </Step>
+</Steps>
+
+<Warning>
+During maintenance mode, only users with the skipMaintenance session variable can access the system.
+</Warning>
+
+## Priority Matrix
+
+Configure the ticket priority calculation based on urgency and impact:
+
+### Configuring the Matrix
+
+<Steps>
+  <Step title="Access matrix configuration">
+    Navigate to **Setup > Assistance** tab.
+  </Step>
+  
+  <Step title="Enable urgency/impact levels">
+    Select which levels (1-5) are active for urgency and impact.
+  </Step>
+  
+  <Step title="Set priority values">
+    For each combination of urgency and impact, set the resulting priority (1-5).
+  </Step>
+</Steps>
+
+## Database Replication
+
+### Configuring DB Slave
+
+For improved performance, configure a read-only database replica:
+
+```yaml
+SQL Server: MariaDB or MySQL hostname
+Database: Database name
+SQL User: Replication user
+SQL Password: User password
+```
+
+### Slave Usage Options
+
+- **Never**: Don't use slave
+- **If synced (all changes)**: Use when fully synchronized
+- **If synced (current user changes)**: Use when user's changes are synced
+- **If synced or read-only account**: Use when available
+- **Always**: Always use slave for searches
+
+<Warning>
+Ensure database replication is properly configured at the MySQL/MariaDB level before enabling this feature.
+</Warning>
+
+## API Configuration
+
+### Enabling REST API
+
+<Steps>
+  <Step title="Set API URL">
+    Configure the **URL of the API** (usually the base URL + /apirest.php).
+  </Step>
+  
+  <Step title="Enable API">
+    Check **Enable Rest API** to activate the API.
+  </Step>
+  
+  <Step title="Configure authentication">
+    Enable desired authentication methods:
+    - **Login with credentials**
+    - **Login with external token**
+  </Step>
+</Steps>
+
+### API Clients
+
+Manage API clients:
+- View the list of registered API clients
+- Add new API clients with specific permissions
+- Generate and manage API tokens
+
+See `/inc/config.class.php:83-91,885-954` for API configuration implementation.
+
+## Best Practices
+
+<Card title="Configuration Recommendations">
+  - **Regular backups**: Always backup before major configuration changes
+  - **Test in staging**: Test configuration changes in a non-production environment first
+  - **Document changes**: Keep a log of configuration modifications
+  - **Security**: Use HTTPS for URL base and API access
+  - **Maintenance windows**: Schedule maintenance mode during off-peak hours
+</Card>
+
+## Related Configuration Files
+
+Key configuration areas in the source code:
+
+- Display configuration: `/inc/config.class.php:304-520`
+- Authentication settings: `/inc/config.class.php:754-804`
+- Assistance settings: `/inc/config.class.php:962-1139`
+- API configuration: `/inc/config.class.php:885-954`

@@ -1,80 +1,301 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart Guide
+description: Get started with ITSM-NG in minutes - from installation to creating your first ticket
 ---
 
-## Get started in three steps
+This guide will help you get ITSM-NG up and running quickly, walk you through the initial setup, and show you how to create your first ticket.
 
-Get your documentation site running locally and make your first customization.
+## Before You Begin
 
-### Step 1: Set up your local environment
+Make sure you have completed the [installation](/installation) and have:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+- ITSM-NG installed and accessible via web browser
+- Default admin credentials ready (username: `itsm`, password: `itsm`)
+- A web server (Apache/Nginx) running
+- Database configured and connected
+
+## First Login
+
+<Steps>
+  <Step title="Access the login page">
+    Navigate to your ITSM-NG installation in your web browser:
+    ```
+    http://your-server/itsm-ng/
+    ```
+  </Step>
+
+  <Step title="Enter default credentials">
+    Use the default administrator account:
+    - **Username**: `itsm`
+    - **Password**: `itsm`
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    <Warning>
+      Change the default password immediately after first login for security!
+    </Warning>
+  </Step>
 
-### Step 2: Deploy your changes
+  <Step title="Change default password">
+    After logging in, click on **itsm** in the top right corner, then:
+    1. Select **My settings**
+    2. Go to the **Main** tab
+    3. Scroll to **Password** section
+    4. Enter your new password twice
+    5. Click **Save**
+  </Step>
+</Steps>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+## Explore the Dashboard
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
+After login, you'll see the main dashboard with:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Ticket Overview" icon="ticket">
+    View open, assigned, and pending tickets
+  </Card>
+  
+  <Card title="Asset Summary" icon="server">
+    Quick stats on computers, phones, and network equipment
+  </Card>
+  
+  <Card title="Recent Activity" icon="clock">
+    Latest changes and updates in the system
+  </Card>
+  
+  <Card title="Quick Actions" icon="bolt">
+    Create tickets, add assets, and manage users
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Create Your First Ticket
+
+<Steps>
+  <Step title="Navigate to Tickets">
+    From the top menu bar, click **Assistance** → **Tickets**
+  </Step>
+
+  <Step title="Click Create Ticket">
+    Click the **+ Create a ticket** button in the top toolbar
+  </Step>
+
+  <Step title="Fill in ticket details">
+    Enter the following information:
+    
+    **Required Fields:**
+    - **Title**: Brief description (e.g., "Printer not working")
+    - **Description**: Detailed explanation of the issue
+    - **Type**: Select `Incident` or `Request`
+    - **Urgency**: How urgent (1=Very low to 5=Very high)
+    - **Impact**: Business impact (1=Very low to 5=Very high)
+    
+    **Optional but Recommended:**
+    - **Category**: Select appropriate category (Hardware, Software, etc.)
+    - **Location**: Where the issue is occurring
+    - **Assigned to**: Technician or group responsible
+    - **Requester**: User reporting the issue
+    
+    <Note>
+      Priority is automatically calculated based on Urgency × Impact using a configurable matrix.
+    </Note>
+  </Step>
+
+  <Step title="Add attachments (optional)">
+    You can attach files by clicking **Add document** at the bottom of the form:
+    - Screenshots
+    - Error logs
+    - Related documents
+  </Step>
+
+  <Step title="Save the ticket">
+    Click **Add** to create the ticket
+    
+    You'll be redirected to the ticket details page where you can:
+    - View ticket information
+    - Add followups and tasks
+    - Track time spent
+    - Change status
+  </Step>
+</Steps>
+
+## Managing Your Ticket
+
+Once created, you can perform various actions:
+
+### Update Ticket Status
+
+<Steps>
+  <Step title="Open the ticket">
+    Click on the ticket from the tickets list
+  </Step>
+
+  <Step title="Change status">
+    In the ticket form, select a new **Status**:
+    - **New** (1) - Just created
+    - **Processing (assigned)** (2) - Being worked on
+    - **Processing (planned)** (3) - Scheduled for work
+    - **Pending** (4) - Awaiting response
+    - **Solved** (5) - Issue resolved
+    - **Closed** (6) - Ticket closed
+  </Step>
+
+  <Step title="Save changes">
+    Click **Update** to save the status change
+  </Step>
+</Steps>
+
+### Add a Followup
+
+Document progress or add comments:
+
+1. Scroll to the **Followups** section
+2. Click **Add a new followup**
+3. Enter your comment or update
+4. Choose visibility (Public or Private)
+5. Click **Add**
+
+<Tip>
+  Use followups to maintain a complete history of actions taken on a ticket.
+</Tip>
+
+### Add a Solution
+
+When the issue is resolved:
+
+1. Click **Add a solution** in the ticket
+2. Select **Solution type** (e.g., Fixed, Unable to reproduce)
+3. Describe the **Solution** in detail
+4. Click **Add**
+
+The ticket status will automatically change to **Solved**.
+
+## Quick Tips
+
+<AccordionGroup>
+  <Accordion title="Assign tickets to yourself">
+    Click **Take** in the ticket toolbar to quickly assign the ticket to yourself.
+  </Accordion>
+
+  <Accordion title="Use keyboard shortcuts">
+    - `Ctrl + Alt + T` - Create new ticket
+    - `Ctrl + S` - Save current form
+    - `Esc` - Cancel operation
+  </Accordion>
+
+  <Accordion title="Enable email notifications">
+    Go to **Setup** → **Notifications** to configure email alerts for ticket updates.
+  </Accordion>
+
+  <Accordion title="Create ticket templates">
+    Set up templates for common ticket types in **Setup** → **Dropdowns** → **Ticket templates**.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Now that you've created your first ticket, explore more features:
+
+<CardGroup cols={2}>
+  <Card title="Asset Management" icon="server" href="/guides/asset-management">
+    Add and manage IT assets like computers, phones, and network equipment
+  </Card>
+  
+  <Card title="User Management" icon="users" href="/admin/user-management">
+    Create users, assign profiles, and manage permissions
+  </Card>
+  
+  <Card title="Configure Entities" icon="sitemap" href="/admin/entities-management">
+    Set up organizational structure with entities
+  </Card>
+  
+  <Card title="Explore API" icon="code" href="/api/overview">
+    Integrate ITSM-NG with external systems using the REST API
+  </Card>
+</CardGroup>
+
+## Common First-Time Tasks
+
+### Create Additional Users
+
+<Steps>
+  <Step title="Navigate to Administration">
+    Click **Administration** → **Users**
+  </Step>
+
+  <Step title="Add new user">
+    Click **+ Add** in the toolbar
+  </Step>
+
+  <Step title="Fill in user details">
+    - **Name**: Login username
+    - **Surname**: Last name
+    - **First name**: First name
+    - **Email**: User's email address
+    - **Password**: Set initial password
+  </Step>
+
+  <Step title="Assign profile">
+    In the **Authorizations** section:
+    - Select **Profile** (e.g., Technician, Observer)
+    - Select **Entity**
+    - Click **Add**
+  </Step>
+</Steps>
+
+### Add Your First Computer
+
+<Steps>
+  <Step title="Go to Assets">
+    Click **Assets** → **Computers** from the menu
+  </Step>
+
+  <Step title="Create computer">
+    Click **+ Add** button
+  </Step>
+
+  <Step title="Enter details">
+    Fill in:
+    - **Name**: Computer name
+    - **Serial number**: Hardware serial
+    - **Location**: Physical location
+    - **User**: Assigned user
+    - **Status**: In use, In stock, etc.
+  </Step>
+
+  <Step title="Save">
+    Click **Add** to create the asset
+  </Step>
+</Steps>
+
+<Info>
+  For automatic inventory, install the [GLPI Agent](https://github.com/glpi-project/glpi-agent) on client machines.
+</Info>
+
+## Getting Help
+
+If you need assistance:
+
+- 📖 Browse the [User Guide](/guides/tickets) for detailed instructions
+- 🔧 Check [Administration](/admin/configuration) for system configuration
+- 💬 Join the [ITSM-NG Community](https://github.com/itsmng/itsm-ng/discussions)
+- 🐛 Report issues on [GitHub](https://github.com/itsmng/itsm-ng/issues)
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Regular Backups" icon="database">
+    Set up automated database and file backups immediately
+  </Card>
+  
+  <Card title="Change Default Credentials" icon="key">
+    Update all default passwords and remove unused accounts
+  </Card>
+  
+  <Card title="Configure Email" icon="envelope">
+    Set up email notifications for important events
+  </Card>
+  
+  <Card title="Plan Your Structure" icon="sitemap">
+    Design entity hierarchy and categories before adding data
+  </Card>
+</CardGroup>
+
+You're now ready to use ITSM-NG! Explore the system and customize it to your organization's needs.
