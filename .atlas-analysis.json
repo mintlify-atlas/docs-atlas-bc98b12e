@@ -1,0 +1,132 @@
+{
+  "projectType": "saas",
+  "projectName": "ITSM-NG",
+  "projectDescription": "Community-driven IT Service Management platform for asset tracking, ticketing, and service desk operations",
+  "theme": "linden",
+  "primaryColor": "#1F4788",
+  "lightColor": "#3B82F6",
+  "darkColor": "#1E3A8A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/entities",
+              "concepts/profiles-permissions",
+              "concepts/authentication"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guides/tickets",
+              "guides/asset-management",
+              "guides/inventory",
+              "guides/helpdesk",
+              "guides/knowledge-base"
+            ]
+          },
+          {
+            "group": "Administration",
+            "pages": [
+              "admin/configuration",
+              "admin/entities-management",
+              "admin/user-management",
+              "admin/ldap-integration",
+              "admin/notifications",
+              "admin/backup-restore"
+            ]
+          },
+          {
+            "group": "Plugins & Extensions",
+            "pages": [
+              "plugins/overview",
+              "plugins/installation",
+              "plugins/development"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "api/overview",
+              "api/authentication",
+              "api/errors"
+            ]
+          },
+          {
+            "group": "Session Management",
+            "pages": [
+              "api/init-session",
+              "api/kill-session",
+              "api/profiles",
+              "api/entities"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "api/tickets",
+              "api/assets",
+              "api/users",
+              "api/documents",
+              "api/search"
+            ]
+          },
+          {
+            "group": "CRUD Operations",
+            "pages": [
+              "api/get-items",
+              "api/create-items",
+              "api/update-items",
+              "api/delete-items"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Ticket Management",
+    "Asset Inventory",
+    "LDAP/SSO Authentication",
+    "Multi-entity Support",
+    "Knowledge Base",
+    "REST API",
+    "Plugin System",
+    "Financial Management",
+    "SLA/OLA Management",
+    "Reporting & Analytics"
+  ],
+  "publicApiSurface": [
+    "GET /initSession",
+    "GET /killSession",
+    "GET /:itemtype/:id",
+    "GET /:itemtype/",
+    "GET /search/:itemtype/",
+    "POST /:itemtype/",
+    "PUT /:itemtype/:id",
+    "DELETE /:itemtype/:id",
+    "GET /getMyProfiles",
+    "GET /getMyEntities",
+    "POST /changeActiveProfile",
+    "POST /changeActiveEntities",
+    "GET /listSearchOptions/:itemtype"
+  ]
+}
